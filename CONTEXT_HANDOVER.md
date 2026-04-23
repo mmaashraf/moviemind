@@ -1,6 +1,6 @@
 # Context Handover: Movie Recommendation System Capstone
 
-**Last Updated:** Phase 4 (ML Models Code Written)
+**Last Updated:** Phase 6 (Post-Modeling Analysis Completed in Safe Mode)
 
 ## Project Overview
 Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommendation System following the AI Development Life Cycle (AIDLC). Full plan is in `AI_LIFECYCLE_PLAN.md`. Progress is tracked in `PROGRESS_TRACKER.md`.
@@ -27,12 +27,19 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
 ## Current Status
 *   **Phase 1 (Setup):** COMPLETED. Repo structure, `.gitignore`, `requirements.txt`, `src/data_loader.py`.
 *   **Phase 2 (EDA):** COMPLETED. `01_eda.ipynb` and `02_long_tail_and_cold_start.ipynb`. Key findings: 95% matrix sparsity, long tail proves cold start problem, ratings skewed positive (mean ~3.58), user base skewed male 20-30s.
-*   **Phase 3 (Features):** COMPLETED. `src/features.py` executed. Output: `data/processed/train_features.csv` (800K rows, 15 cols) and `test_features.csv`. Time-based split to prevent data leakage.
-*   **Phase 4 (ML Models):** COMPLETED. `src/ml_models.py` and `src/evaluation.py`. Trained Baseline, Linear Regression, Random Forest, and Gradient Boosting. 
-    *   **Results:** All models comfortably beat the Baseline (RMSE 1.104). Gradient Boosting performed best (RMSE 0.897, MAE 0.705). Models saved to `models/` directory.
-*   **Phase 5 (Deep Learning):** COMPLETED. `src/dl_model.py` executed. PyTorch NCF model trained using M1 `mps` acceleration.
-    *   **Results:** The PyTorch model reached an RMSE of ~1.097. Without massive hyperparameter tuning, the Phase 4 Gradient Boosting model (RMSE 0.897) remains our reigning champion.
-*   **Next Step:** Phase 6 (Post-Modeling Analysis & Explainability).
+*   **Phase 3 (Features):** COMPLETED. `src/features.py` executed. Output files exist in `data/processed/` (`train_features.csv`, `test_features.csv`). Time-based split used to prevent leakage.
+*   **Phase 4 (ML Models):** COMPLETED. `src/ml_models.py` and `src/evaluation.py` implemented and run.
+    *   **Results:** Baseline RMSE 1.104; best model remains Gradient Boosting with RMSE 0.897 and MAE 0.705.
+*   **Phase 5 (Deep Learning):** COMPLETED. `src/dl_model.py` executed on M1 `mps`.
+    *   **Results:** Base NCF run reached RMSE ~1.097 (below Gradient Boosting performance).
+*   **Phase 5b (DL Hyperparameter Tuning):** COMPLETED. 50-trial Optuna run finished.
+*   **Final 50-trial result:** `models/best_dl_params.txt` now shows RMSE 1.0061 (embedding dim 32).
+*   **Comparison:** Tuned DL still does not beat Gradient Boosting (RMSE 0.897), so GB remains best model.
+*   **Phase 6 (Post-Modeling Analysis & XAI):** COMPLETED with safe-mode execution.
+    *   Retrained best tuned DL config: validation RMSE 1.0302 (5-epoch retrain run).
+    *   Saved embeddings + PCA artifacts and Gradient Boosting feature-importance outputs in `evidence/phase6/`.
+    *   t-SNE is now disabled by default due local segmentation fault risk; enable manually with `MOVIEMIND_ENABLE_TSNE=1`.
+*   **Next Step:** Start **Phase 7 (Backend API Development)** with model-selection support so all trained models are available from API/UI.
 
 ## Key EDA Insights That Drive Design
 *   95% sparsity means simple KNN fails. Must use embeddings/matrix factorization.
@@ -41,9 +48,21 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
 *   Demographics (age, gender, occupation) available for all 6,040 users. Strong feature for personalization.
 
 ## Rules & Constraints (Set by User)
-*   **Code Quality:** No messy scratchpad code. Clean, professional one-liners. Do code review after each phase.
-*   **Communication:** Stop and ask before Git commits. Stop at phase boundaries for recap/confirmation.
+1.  **Modular Architecture:** Keep strict separation across `src/`, `data/`, `models/`, and `notebooks/`.
+2.  **Dual-Stream Logging:** Training scripts must log to both console and a dedicated `.txt` file in `models/`.
+3.  **Execution Timers:** Record training duration for ML and DL runs.
+4.  **No Placeholders:** No dummy MVP shortcuts; capstone-grade implementations only.
+5.  **Git Hygiene:** Use feature branches and descriptive commits; keep tree clean between phases.
+6.  **Big Three Documentation:** Keep `PROGRESS_TRACKER.md`, `CONTEXT_HANDOVER.md`, and `AI_CONCEPTS_WIKI.md` synchronized.
+7.  **Time-Based Splitting:** Use chronological splits to avoid leakage.
+8.  **Rigorous Validation:** Maintain Train/Validation/Test discipline, especially during tuning.
+9.  **Hardware Acceleration:** Use M1 `mps` (or best available accelerator) for DL.
+10. **XAI First:** Accuracy is not enough; include explainability and embedding visualizations.
+11. **Evidence Capture:** Every phase must save observations, outputs, and proof artifacts under `evidence/<phase>/`.
+
+## Practical Workflow Constraints
+*   **Communication:** Ask before git commits; stop at phase boundaries for recap/confirmation.
 *   **References:** Credit all external code sources.
-*   **Comments:** Moderate, simple language.
-*   **File Operations:** Restricted to `/Users/ashraf/iitd-aiml/final_project/` directory only.
-*   **Git/Python Execution:** Must be done by the user from their terminal (macOS sandbox restriction).
+*   **Comments:** Moderate, simple-language comments.
+*   **File Operations:** Restricted to `/Users/ashraf/iitd-aiml/final_project/`.
+*   **Git/Python Execution:** Executed by the user from terminal due to local environment restrictions.

@@ -1,0 +1,9 @@
+Phase 6 Post-Modeling Analysis Summary
+=====================================
+Best tuned RMSE from best_dl_params.txt: 1.0061
+RMSE from retraining best tuned config (5 epochs): 0.9754
+t-SNE status: completed
+Top 3 Gradient Boosting features: movie_avg_rating, user_avg_rating, user_rating_count
+
+Note: Retrained RMSE may differ from tuning best due to random initialization and limited epochs.
+All artifacts are saved under evidence/phase6/.
