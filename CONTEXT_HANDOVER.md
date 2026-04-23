@@ -28,8 +28,11 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
 *   **Phase 1 (Setup):** COMPLETED. Repo structure, `.gitignore`, `requirements.txt`, `src/data_loader.py`.
 *   **Phase 2 (EDA):** COMPLETED. `01_eda.ipynb` and `02_long_tail_and_cold_start.ipynb`. Key findings: 95% matrix sparsity, long tail proves cold start problem, ratings skewed positive (mean ~3.58), user base skewed male 20-30s.
 *   **Phase 3 (Features):** COMPLETED. `src/features.py` executed. Output: `data/processed/train_features.csv` (800K rows, 15 cols) and `test_features.csv`. Time-based split to prevent data leakage.
-*   **Phase 4 (ML Models):** CODE WRITTEN. `src/ml_models.py` and `src/evaluation.py`. Awaiting execution: `python3 src/ml_models.py`.
-*   **Next Step:** Phase 5 (Deep Learning with PyTorch).
+*   **Phase 4 (ML Models):** COMPLETED. `src/ml_models.py` and `src/evaluation.py`. Trained Baseline, Linear Regression, Random Forest, and Gradient Boosting. 
+    *   **Results:** All models comfortably beat the Baseline (RMSE 1.104). Gradient Boosting performed best (RMSE 0.897, MAE 0.705). Models saved to `models/` directory.
+*   **Phase 5 (Deep Learning):** COMPLETED. `src/dl_model.py` executed. PyTorch NCF model trained using M1 `mps` acceleration.
+    *   **Results:** The PyTorch model reached an RMSE of ~1.097. Without massive hyperparameter tuning, the Phase 4 Gradient Boosting model (RMSE 0.897) remains our reigning champion.
+*   **Next Step:** Phase 6 (Post-Modeling Analysis & Explainability).
 
 ## Key EDA Insights That Drive Design
 *   95% sparsity means simple KNN fails. Must use embeddings/matrix factorization.
