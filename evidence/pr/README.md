@@ -15,6 +15,12 @@ From repo root:
 bash evidence/pr/create_prs.sh
 ```
 
+Single phase:
+
+```bash
+bash evidence/pr/create_prs.sh --phase 6
+```
+
 ### Behavior
 
 - If `gh` CLI is available and authenticated:

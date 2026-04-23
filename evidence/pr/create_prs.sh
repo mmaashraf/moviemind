@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # Run from repo root:
-#   bash evidence/pr/create_prs.sh
+#   bash evidence/pr/create_prs.sh                # all PRs
+#   bash evidence/pr/create_prs.sh --phase 6      # only Phase 6 PR
+#   bash evidence/pr/create_prs.sh --phase all    # same as default
 
 REPO_SLUG="mmaashraf/moviemind"
 
@@ -12,6 +14,10 @@ has_gh() {
 
 has_open() {
   command -v open >/dev/null 2>&1
+}
+
+usage() {
+  echo "Usage: bash evidence/pr/create_prs.sh [--phase <1|2|3|4|6|all>]"
 }
 
 create_or_print_pr() {
@@ -56,25 +62,60 @@ BODY_3=$'## Summary\n- implement feature engineering pipeline\n- add strict time
 BODY_4=$'## Summary\n- add ML model training/evaluation pipeline\n- add DL NCF training workflow\n- add tuning foundation and concept documentation\n\n## Test plan\n- run ML training script and verify logged metrics\n- run DL training script and verify saved artifacts'
 BODY_5=$'## Summary\n- add Phase 6 post-analysis with crash-safe t-SNE behavior\n- generate embeddings/PCA/t-SNE/XAI evidence artifacts\n- sync core docs and include UI mock assets\n\n## Test plan\n- run `python src/post_analysis.py` and verify phase6 artifacts\n- run `MOVIEMIND_ENABLE_TSNE=1 python src/post_analysis.py` and verify t-SNE outputs\n- review docs/evidence consistency'
 
-create_or_print_pr "main" "phase-1-setup" \
-  "feat(phase-1): initialize project structure and dataset loader" \
-  "${BODY_1}"
+run_phase() {
+  local phase="$1"
+  case "${phase}" in
+    1)
+      create_or_print_pr "main" "phase-1-setup" \
+        "feat(phase-1): initialize project structure and dataset loader" \
+        "${BODY_1}"
+      ;;
+    2)
+      create_or_print_pr "phase-1-setup" "phase-2-eda" \
+        "feat(phase-2): add exploratory data analysis notebooks and findings" \
+        "${BODY_2}"
+      ;;
+    3)
+      create_or_print_pr "phase-2-eda" "phase-3-features" \
+        "feat(phase-3): implement feature engineering with time-based split" \
+        "${BODY_3}"
+      ;;
+    4)
+      create_or_print_pr "phase-3-features" "phase-4-ml-modeling" \
+        "feat(phase-4-5): add ML baselines, DL model, and tuning foundation" \
+        "${BODY_4}"
+      ;;
+    6)
+      create_or_print_pr "phase-4-ml-modeling" "phase-6-analysis" \
+        "feat(phase-6): post-analysis pipeline, XAI artifacts, and UI mock kit" \
+        "${BODY_5}"
+      ;;
+    all)
+      run_phase 1
+      run_phase 2
+      run_phase 3
+      run_phase 4
+      run_phase 6
+      ;;
+    *)
+      echo "Invalid phase: ${phase}"
+      usage
+      exit 1
+      ;;
+  esac
+}
 
-create_or_print_pr "phase-1-setup" "phase-2-eda" \
-  "feat(phase-2): add exploratory data analysis notebooks and findings" \
-  "${BODY_2}"
+PHASE="all"
+if [[ $# -gt 0 ]]; then
+  if [[ "$1" == "--phase" && $# -eq 2 ]]; then
+    PHASE="$2"
+  else
+    usage
+    exit 1
+  fi
+fi
 
-create_or_print_pr "phase-2-eda" "phase-3-features" \
-  "feat(phase-3): implement feature engineering with time-based split" \
-  "${BODY_3}"
-
-create_or_print_pr "phase-3-features" "phase-4-ml-modeling" \
-  "feat(phase-4-5): add ML baselines, DL model, and tuning foundation" \
-  "${BODY_4}"
-
-create_or_print_pr "phase-4-ml-modeling" "phase-6-analysis" \
-  "feat(phase-6): post-analysis pipeline, XAI artifacts, and UI mock kit" \
-  "${BODY_5}"
+run_phase "${PHASE}"
 
 echo "------------------------------------------------------------"
 echo "Done."
