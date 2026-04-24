@@ -21,11 +21,12 @@
 ## Phase 4: Machine Learning (ML) Modeling
 - [x] Implement baseline and ML models (`src/ml_models.py`)
 - [x] Add evaluation logic (`src/evaluation.py`)
-- **Status:** **CODE WRITTEN** (needs `python3 src/ml_models.py` execution)
+- **Status:** **COMPLETED** (Gradient Boosting achieved lowest RMSE: 0.897)
 
 ## Phase 5: Deep Learning (DL) Modeling
-- [ ] Build and train PyTorch model with embeddings
-- **Status:** *Pending*
+- [x] Build and train PyTorch model with embeddings (`src/dl_model.py`)
+- [x] Compare against ML baselines
+- **Status:** **COMPLETED** (Gradient Boosting ML model still holds the lead, PyTorch NCF overfit without heavy tuning)
 
 ## Phase 6: Post-Modeling Analysis
 - [ ] Implement clustering and visualizations
