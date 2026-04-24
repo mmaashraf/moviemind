@@ -1,0 +1,2 @@
+t-SNE skipped by default for crash safety.
+Set MOVIEMIND_ENABLE_TSNE=1 to enable t-SNE generation.

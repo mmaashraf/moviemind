@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieMind UI Mock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./mock_app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar glass">
+      <div class="brand-block">
+        <div class="brand-mark">M</div>
+        <div>
+          <h1>MovieMind</h1>
+          <p>AI Movie Recommendation Studio</p>
+        </div>
+      </div>
+
+      <div class="topbar-badges">
+        <span class="pill">Dataset: MovieLens 1M</span>
+        <span class="pill">Device: MPS</span>
+        <span class="pill pill-highlight">Champion: Gradient Boosting</span>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <aside class="panel glass controls-panel">
+        <div class="panel-head">
+          <h2>Recommendation Controls</h2>
+          <span class="panel-tag">Inference</span>
+        </div>
+
+        <label class="field">
+          <span>User ID</span>
+          <input type="text" value="1234" />
+        </label>
+
+        <div class="field">
+          <div class="field-line">
+            <span>Top-K Results</span>
+            <strong>10</strong>
+          </div>
+          <input type="range" min="5" max="20" value="10" />
+        </div>
+
+        <div class="toggle-row">
+          <span>Diversity Mode</span>
+          <button class="toggle active">ON</button>
+        </div>
+
+        <div class="toggle-row">
+          <span>Explainability</span>
+          <button class="toggle active">ON</button>
+        </div>
+
+        <label class="field">
+          <span>Inference Model</span>
+          <select>
+            <option>Gradient Boosting</option>
+            <option>Baseline</option>
+            <option>Linear Regression</option>
+            <option>Random Forest</option>
+            <option>NCF (DL)</option>
+            <option>Tuned NCF (Optuna)</option>
+          </select>
+        </label>
+
+        <div class="model-list">
+          <div class="mini-model active-model">
+            <span>Gradient Boosting</span>
+            <small>Best RMSE: 0.897</small>
+          </div>
+          <div class="mini-model">
+            <span>Tuned NCF (Optuna)</span>
+            <small>Best RMSE: 1.006</small>
+          </div>
+          <div class="mini-model">
+            <span>NCF (DL)</span>
+            <small>RMSE: 1.097</small>
+          </div>
+        </div>
+
+        <button class="primary-btn">Generate Recommendations</button>
+      </aside>
+
+      <section class="panel glass recommendations-panel">
+        <div class="panel-head">
+          <h2>Top Recommendations</h2>
+          <span class="panel-tag">Top-K Output</span>
+        </div>
+
+        <div class="recommendation-list">
+          <article class="movie-card">
+            <div class="movie-main">
+              <div>
+                <h3>The Godfather</h3>
+                <p>Crime, Drama</p>
+              </div>
+              <span class="model-badge">GB</span>
+            </div>
+            <div class="score-row">
+              <span>Predicted Rating</span>
+              <strong>4.73</strong>
+            </div>
+            <div class="score-bar"><div style="width: 94%"></div></div>
+          </article>
+
+          <article class="movie-card">
+            <div class="movie-main">
+              <div>
+                <h3>The Shawshank Redemption</h3>
+                <p>Drama</p>
+              </div>
+              <span class="model-badge">GB</span>
+            </div>
+            <div class="score-row">
+              <span>Predicted Rating</span>
+              <strong>4.68</strong>
+            </div>
+            <div class="score-bar"><div style="width: 92%"></div></div>
+          </article>
+
+          <article class="movie-card">
+            <div class="movie-main">
+              <div>
+                <h3>Pulp Fiction</h3>
+                <p>Crime, Thriller</p>
+              </div>
+              <span class="model-badge">GB</span>
+            </div>
+            <div class="score-row">
+              <span>Predicted Rating</span>
+              <strong>4.61</strong>
+            </div>
+            <div class="score-bar"><div style="width: 89%"></div></div>
+          </article>
+
+          <article class="movie-card">
+            <div class="movie-main">
+              <div>
+                <h3>The Matrix</h3>
+                <p>Action, Sci-Fi</p>
+              </div>
+              <span class="model-badge">GB</span>
+            </div>
+            <div class="score-row">
+              <span>Predicted Rating</span>
+              <strong>4.54</strong>
+            </div>
+            <div class="score-bar"><div style="width: 87%"></div></div>
+          </article>
+
+          <article class="movie-card">
+            <div class="movie-main">
+              <div>
+                <h3>Se7en</h3>
+                <p>Mystery, Thriller</p>
+              </div>
+              <span class="model-badge">GB</span>
+            </div>
+            <div class="score-row">
+              <span>Predicted Rating</span>
+              <strong>4.49</strong>
+            </div>
+            <div class="score-bar"><div style="width: 85%"></div></div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="panel glass explain-panel">
+        <div class="panel-head">
+          <h2>Why This Recommendation?</h2>
+          <span class="panel-tag">XAI</span>
+        </div>
+
+        <div class="feature-bars">
+          <div class="feature-row">
+            <span>movie_avg_rating</span>
+            <div class="mini-bar"><div style="width: 88%"></div></div>
+          </div>
+          <div class="feature-row">
+            <span>user_avg_rating</span>
+            <div class="mini-bar"><div style="width: 74%"></div></div>
+          </div>
+          <div class="feature-row">
+            <span>movie_rating_count</span>
+            <div class="mini-bar"><div style="width: 67%"></div></div>
+          </div>
+          <div class="feature-row">
+            <span>release_year</span>
+            <div class="mini-bar"><div style="width: 42%"></div></div>
+          </div>
+        </div>
+
+        <div class="explanation-box">
+          <h3>Reasoning Summary</h3>
+          <ul>
+            <li>You often rate highly-rated crime dramas above your own average.</li>
+            <li>This movie is popular among users with similar viewing history.</li>
+            <li>The selected model sees strong alignment with your rating pattern.</li>
+          </ul>
+        </div>
+
+        <div class="agent-card">
+          <span class="agent-label">Ask MovieMind Agent</span>
+          <p>"Recommend underrated sci-fi under 2 hours for a 25-year-old engineer."</p>
+        </div>
+      </aside>
+
+      <section class="panel glass embed-panel">
+        <div class="panel-head">
+          <h2>User Embedding Map (PCA/t-SNE)</h2>
+          <span class="panel-tag">Analysis</span>
+        </div>
+
+        <!-- Static dots are enough for a visual mock. -->
+        <div class="embedding-map">
+          <span class="dot cyan" style="left: 12%; top: 32%;"></span>
+          <span class="dot cyan" style="left: 18%; top: 45%;"></span>
+          <span class="dot cyan" style="left: 24%; top: 58%;"></span>
+          <span class="dot orange" style="left: 34%; top: 40%;"></span>
+          <span class="dot cyan" style="left: 39%; top: 51%;"></span>
+          <span class="dot cyan" style="left: 46%; top: 26%;"></span>
+          <span class="dot cyan" style="left: 49%; top: 62%;"></span>
+          <span class="dot cyan" style="left: 56%; top: 35%;"></span>
+          <span class="dot cyan" style="left: 63%; top: 43%;"></span>
+          <span class="dot cyan" style="left: 69%; top: 55%;"></span>
+          <span class="dot cyan" style="left: 75%; top: 29%;"></span>
+          <span class="dot cyan" style="left: 82%; top: 47%;"></span>
+          <div class="map-label">Current user highlighted in orange</div>
+        </div>
+      </section>
+
+      <section class="panel glass compare-panel">
+        <div class="panel-head">
+          <h2>Model Comparison</h2>
+          <span class="panel-tag">Benchmark</span>
+        </div>
+
+        <div class="compare-list">
+          <div class="compare-row">
+            <span>Gradient Boosting</span>
+            <div class="compare-bar champion"><div style="width: 96%"></div></div>
+            <strong>0.897</strong>
+          </div>
+          <div class="compare-row">
+            <span>Tuned NCF</span>
+            <div class="compare-bar"><div style="width: 86%"></div></div>
+            <strong>1.006</strong>
+          </div>
+          <div class="compare-row">
+            <span>NCF (DL)</span>
+            <div class="compare-bar"><div style="width: 78%"></div></div>
+            <strong>1.097</strong>
+          </div>
+          <div class="compare-row">
+            <span>Baseline</span>
+            <div class="compare-bar"><div style="width: 62%"></div></div>
+            <strong>1.104</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,61 +1,158 @@
 # MovieMind: Movie Recommendation System & AI Agent
 
-This repository contains an end-to-end Machine Learning and Deep Learning pipeline for a Movie Recommendation System, built on the classic MovieLens 1M dataset. 
+MovieMind is an end-to-end capstone recommender system built on MovieLens 1M.
+The project follows a strict AI Development Life Cycle (AIDLC) with reproducible
+phase outputs, evidence capture, and milestone-based documentation updates.
 
-It is designed as an academic Capstone Project following a strict AI Development Life Cycle (AIDLC).
+## Current Project Status
 
-## Architecture & Features
-*   **Data:** MovieLens 1M (includes user demographics like Age, Gender, Occupation).
-*   **Machine Learning:** Linear Regression, Random Forest, Gradient Boosting (Content-Based).
-*   **Deep Learning:** PyTorch Neural Collaborative Filtering (NCF) with User/Movie Embeddings (Hybrid).
-*   **Explainable AI (XAI):** Models are designed to output reasoning behind recommendations.
-*   **NLP Agent:** (Upcoming) A natural language interface to query recommendations.
+- Phase 1 (Setup): completed
+- Phase 2 (EDA): completed
+- Phase 3 (Feature Engineering): completed
+- Phase 4 (ML Modeling): completed (best model: Gradient Boosting, RMSE ~0.897)
+- Phase 5 (DL Baseline): completed (NCF baseline underperforms GB)
+- Phase 5b (Optuna tuning): completed (50 trials, best RMSE 1.0061)
+- Phase 6 (Post-analysis): completed (safe-mode run; t-SNE skipped by default)
+- Phase 7+ (API, UI, Agent): pending execution
 
----
+## Architecture and Key Features
 
-## 🚀 How to Run the Project
+- Data: MovieLens 1M with demographics (`age`, `gender`, `occupation`)
+- ML models: Baseline, Linear Regression, Random Forest, Gradient Boosting
+- DL model: Neural Collaborative Filtering (PyTorch embeddings + dense features)
+- XAI direction: feature importance + embedding visualizations
+- UI/Agent direction: Streamlit dashboard + natural language query layer
 
-Follow these steps in order to reproduce the pipeline from raw data to trained models.
+## Core Reproducibility Rules
 
-### Step 0: Environment Setup
-Ensure you have Python 3 installed. We recommend creating a virtual environment.
+1. Keep code modular (`src/`, `data/`, `models/`, `notebooks/`).
+2. Log model runs to both console and file logs.
+3. Record run durations for model comparisons.
+4. Use time-based splits (no random leakage in recommenders).
+5. Keep Train / Validation / Test logic explicit.
+6. Capture evidence in `evidence/<phase>/` after each milestone.
+7. Update all three docs every milestone:
+   - `PROGRESS_TRACKER.md`
+   - `CONTEXT_HANDOVER.md`
+   - `AI_CONCEPTS_WIKI.md`
+
+## Setup
+
+### 0) Environment
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 1: Data Acquisition
-Download and extract the MovieLens 1M dataset into the `data/` folder.
+### 1) Data Acquisition
+
 ```bash
 python3 src/data_loader.py
 ```
 
-### Step 2: Exploratory Data Analysis (EDA)
-Explore the data distributions, matrix sparsity, and the "Cold Start" problem.
-*   Open and run `notebooks/01_eda.ipynb`
-*   Open and run `notebooks/02_long_tail_and_cold_start.ipynb`
+Expected:
+- `data/ml-1m/ratings.dat`
+- `data/ml-1m/movies.dat`
+- `data/ml-1m/users.dat`
 
-### Step 3: Feature Engineering
-Generate statistical features and perform a strict Time-Based Train/Test split to prevent data leakage.
+### 2) EDA
+
+Run notebooks:
+- `notebooks/01_eda.ipynb`
+- `notebooks/02_long_tail_and_cold_start.ipynb`
+
+Expected:
+- Insights on sparsity, long-tail, cold-start patterns
+
+### 3) Feature Engineering
+
 ```bash
 python3 src/features.py
 ```
-*(This generates `train_features.csv` and `test_features.csv` in `data/processed/`)*
 
-### Step 4: Machine Learning Models
-Train traditional ML baseline models to establish a performance benchmark.
+Expected:
+- `data/processed/train_features.csv`
+- `data/processed/test_features.csv`
+
+### 4) ML Modeling
+
 ```bash
 python3 src/ml_models.py
 ```
-*(This trains the models and saves `.pkl` files to the `models/` directory)*
 
-### Step 5: Deep Learning Model
-Train the Neural Collaborative Filtering model using PyTorch (Hardware accelerated via `mps` on Apple Silicon).
+Expected:
+- `models/linear_regression.pkl`
+- `models/random_forest.pkl`
+- `models/gradient_boosting.pkl`
+- `models/ml_training_log.txt`
+
+### 5) DL Baseline
+
 ```bash
 python3 src/dl_model.py
 ```
-*(This trains for 10 epochs, saves `ncf_model.pt`, and generates a loss curve plot)*
 
----
-*Note: This README acts as the central execution wiki and will be updated as new phases (API, UI, Agent) are completed.*
+Expected:
+- `models/ncf_model.pt`
+- `models/dl_training_log.txt`
+- `models/dl_loss_curve.png`
+
+### 5b) DL Hyperparameter Tuning (Optuna)
+
+```bash
+python3 src/tune_dl.py
+```
+
+Expected:
+- `models/best_dl_params.txt`
+- `models/tune_dl_log.txt`
+- `evidence/phase5b/tune_dl_observations.txt`
+
+### 6) Post-Modeling Analysis and XAI
+
+```bash
+python3 src/post_analysis.py
+```
+
+Optional (enable t-SNE explicitly):
+```bash
+MOVIEMIND_ENABLE_TSNE=1 python3 src/post_analysis.py
+```
+
+Expected:
+- `models/ncf_tuned_best.pt`
+- `evidence/phase6/post_analysis_log.txt`
+- `evidence/phase6/post_analysis_summary.txt`
+- `evidence/phase6/user_embeddings_raw.csv`
+- `evidence/phase6/user_embeddings_pca_2d.csv`
+- `evidence/phase6/user_embeddings_pca_2d.png`
+- `evidence/phase6/gradient_boosting_feature_importance.csv`
+- `evidence/phase6/gradient_boosting_feature_importance.png`
+- `evidence/phase6/tsne_status.txt` (present when t-SNE is skipped in safe mode)
+
+Optional outputs (only when `MOVIEMIND_ENABLE_TSNE=1`):
+- `evidence/phase6/user_embeddings_tsne_2d_sample.csv`
+- `evidence/phase6/user_embeddings_tsne_2d_sample.png`
+
+## Evidence Map
+
+- `evidence/phase5b/`: tuning observations and result snapshots
+- `evidence/phase6/`: post-analysis outputs and final summary
+- `evidence/code_reviews/`: periodic review notes and findings
+
+## Milestone Update Protocol (Mandatory)
+
+After every major run/phase completion:
+
+1. Save outputs in `evidence/<phase>/`.
+2. Update `PROGRESS_TRACKER.md` status and checkboxes.
+3. Update `CONTEXT_HANDOVER.md` with latest state and next step.
+4. Update `AI_CONCEPTS_WIKI.md` for new theory decisions.
+5. Update this `README.md` with:
+   - new runnable commands,
+   - expected artifacts,
+   - known caveats and best model snapshot.
+
+This README is the primary replication guide and must stay in sync with each milestone.
