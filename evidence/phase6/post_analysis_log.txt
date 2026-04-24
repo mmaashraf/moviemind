@@ -1,0 +1,21 @@
+--- Phase 6 Post Analysis Log ---
+--- Starting Phase 6: Post-Modeling Analysis & XAI ---
+Loaded best tuned RMSE from file: 1.0061
+Loaded tuned params keys: dropout_rate, embedding_dim, learning_rate, n_layers, n_units_l0, n_units_l1, n_units_l2
+Training best tuned model on device: mps
+Epoch 1/5 train MSE: 7.3633
+Epoch 2/5 train MSE: 1.6406
+Epoch 3/5 train MSE: 1.1073
+Epoch 4/5 train MSE: 0.9809
+Epoch 5/5 train MSE: 0.9446
+Retrain complete in 0.69 minutes | Validation RMSE: 0.9754
+Saved tuned model weights: models/ncf_tuned_best.pt
+Saved raw user embeddings: evidence/phase6/user_embeddings_raw.csv
+Saved PCA coordinates: evidence/phase6/user_embeddings_pca_2d.csv
+Saved PCA plot: evidence/phase6/user_embeddings_pca_2d.png
+Saved t-SNE coordinates (sample): evidence/phase6/user_embeddings_tsne_2d_sample.csv
+Saved t-SNE plot: evidence/phase6/user_embeddings_tsne_2d_sample.png
+Saved feature importance table: evidence/phase6/gradient_boosting_feature_importance.csv
+Saved feature importance plot: evidence/phase6/gradient_boosting_feature_importance.png
+Saved summary: evidence/phase6/post_analysis_summary.txt
+--- Phase 6 analysis complete ---
