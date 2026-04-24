@@ -1,0 +1,11 @@
+data/
+models/
+.env
+__pycache__/
+*.pt
+*.pkl
+*.ipynb_checkpoints/
+.pytest_cache/
+venv/
+env/
+.DS_Store
