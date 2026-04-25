@@ -477,33 +477,14 @@ Planned optional extension for new users:
                     st.error(rec_result["error"])
 
     with st.expander("Taste Map (Game-Style Radar)", expanded=False):
+        st.caption(
+            "Normalization note: radar values are scaled to [0,1] per profile. "
+            "1.0 means strongest genre in that profile, not absolute rating/count."
+        )
         user_counts = s.get("top_genre_counts", {}) or {}
         reco_counts = _genre_counts_from_recommendations(st.session_state.get("last_recommendations", []))
         _render_taste_radar(user_counts=user_counts, reco_counts=reco_counts)
     _render_diversity_impact_panel(st.session_state.get("last_recommendations", []), diversity_alpha)
-
-
-def explain_page(models: List[Dict[str, Any]]) -> None:
-    st.subheader("Explain")
-    if not models:
-        st.info("No models available from API.")
-        return
-    model_map = {f"{m['display_name']} ({m['model_id']})": m["model_id"] for m in models}
-    selected = st.selectbox("Model for explanation", list(model_map.keys()), key="explain_model")
-    info_result = safe_api_get(f"/models/{model_map[selected]}/info")
-    if not info_result["ok"]:
-        st.error(info_result["error"])
-        return
-    info = info_result["data"]
-    st.write("Model summary")
-    st.json(
-        {
-            "family": info["family"],
-            "available": info["available"],
-            "metrics": info.get("metrics", {}),
-            "inspector": info.get("inspector", {}),
-        }
-    )
 
 
 def inspector_page(models: List[Dict[str, Any]]) -> None:
@@ -1111,10 +1092,9 @@ Why this matters:
 def main() -> None:
     render_header()
     models = load_models()
-    tab_reco, tab_explain, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_system = st.tabs(
+    tab_reco, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_system = st.tabs(
         [
             "Recommend",
-            "Explain",
             "Model Inspector",
             "Embedding Space",
             "Model Visualizers",
@@ -1125,8 +1105,6 @@ def main() -> None:
     )
     with tab_reco:
         recommend_page(models)
-    with tab_explain:
-        explain_page(models)
     with tab_inspect:
         inspector_page(models)
     with tab_embed:

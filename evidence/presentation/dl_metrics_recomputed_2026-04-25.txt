@@ -1,0 +1,4 @@
+NCF Baseline RMSE: 1.1146
+NCF Baseline MAE: 0.9307
+NCF Tuned RMSE: 0.9754
+NCF Tuned MAE: 0.7936
