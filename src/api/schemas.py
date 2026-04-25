@@ -42,6 +42,7 @@ class UserSummaryResponse(BaseModel):
     first_timestamp_train: Optional[int] = None
     last_timestamp_train: Optional[int] = None
     top_genres_train: List[str] = Field(default_factory=list)
+    top_genre_counts: Dict[str, int] = Field(default_factory=dict)
 
 
 class PredictRequest(BaseModel):
@@ -63,12 +64,18 @@ class RecommendationItem(BaseModel):
     title: str
     genres: str
     predicted_rating: float
+    reason: Optional[str] = None
+    predicted_rating_raw: Optional[float] = None
+    overlap_penalty: Optional[float] = None
+    adjusted_score: Optional[float] = None
+    overlap_genres: List[str] = Field(default_factory=list)
 
 
 class RecommendRequest(BaseModel):
     model_id: str
     user_id: int = Field(..., ge=1)
     top_n: int = Field(10, ge=1, le=100)
+    diversity_alpha: float = Field(0.0, ge=0.0, le=1.0)
 
 
 class RecommendResponse(BaseModel):

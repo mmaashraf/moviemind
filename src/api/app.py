@@ -128,13 +128,14 @@ def predict(payload: PredictRequest) -> PredictResponse:
 def recommend(payload: RecommendRequest) -> RecommendResponse:
     # Main recommendation endpoint used by Streamlit Recommend tab.
     logger.info(
-        "recommend called model_id=%s user_id=%s top_n=%s",
+        "recommend called model_id=%s user_id=%s top_n=%s diversity_alpha=%.2f",
         payload.model_id,
         payload.user_id,
         payload.top_n,
+        payload.diversity_alpha,
     )
     try:
-        recs = registry.recommend(payload.model_id, payload.user_id, payload.top_n)
+        recs = registry.recommend(payload.model_id, payload.user_id, payload.top_n, payload.diversity_alpha)
         return RecommendResponse(
             model_id=payload.model_id,
             user_id=payload.user_id,

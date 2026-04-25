@@ -321,8 +321,51 @@ class ModelRegistry:
         clipped = self._clip_rating(raw)
         return clipped, abs(clipped - raw) > 1e-9
 
-    def recommend(self, model_id: str, user_id: int, top_n: int) -> List[Dict[str, Any]]:
-        """Returns top-N unseen movies for user by batched model scoring."""
+    def _genres_set(self, genres_text: str) -> set:
+        return {g.strip() for g in str(genres_text).split("|") if g.strip()}
+
+    def _diversity_rerank(self, scored: pd.DataFrame, top_n: int, diversity_alpha: float) -> pd.DataFrame:
+        """Greedy rerank that trades predicted score vs genre overlap with selected items."""
+        if diversity_alpha <= 0 or scored.empty:
+            base = scored.nlargest(top_n, "predicted_rating").copy()
+            base["overlap_penalty"] = 0.0
+            base["adjusted_score"] = base["predicted_rating"]
+            base["overlap_genres"] = [[] for _ in range(len(base))]
+            return base
+
+        pool = scored.nlargest(min(250, len(scored)), "predicted_rating").copy()
+        selected_rows: List[pd.Series] = []
+        selected_genres: set = set()
+
+        while len(selected_rows) < top_n and not pool.empty:
+            best_idx = None
+            best_score = -1e9
+            best_overlap = 0.0
+            best_overlap_genres: List[str] = []
+            for idx, row in pool.iterrows():
+                gset = row["genre_set"]
+                overlap = 0.0
+                if selected_genres and gset:
+                    overlap = len(gset & selected_genres) / max(len(gset), 1)
+                adjusted = float(row["predicted_rating"]) - diversity_alpha * overlap
+                if adjusted > best_score:
+                    best_score = adjusted
+                    best_idx = idx
+                    best_overlap = overlap
+                    best_overlap_genres = sorted(list(gset & selected_genres))
+            chosen = pool.loc[best_idx]
+            chosen = chosen.copy()
+            chosen["overlap_penalty"] = float(diversity_alpha * best_overlap)
+            chosen["adjusted_score"] = float(best_score)
+            chosen["overlap_genres"] = best_overlap_genres
+            selected_rows.append(chosen)
+            selected_genres.update(chosen["genre_set"])
+            pool = pool.drop(index=best_idx)
+
+        return pd.DataFrame(selected_rows)
+
+    def recommend(self, model_id: str, user_id: int, top_n: int, diversity_alpha: float = 0.0) -> List[Dict[str, Any]]:
+        """Returns top-N unseen movies for user by batched model scoring with optional diversity rerank."""
         runtime = self.get_model(model_id)
         if not runtime.available:
             raise FileNotFoundError(f"Model artifact missing for: {model_id}")
@@ -345,19 +388,36 @@ class ModelRegistry:
         clipped_preds = np.clip(raw_preds, RATING_MIN, RATING_MAX)
         scored = feature_df[["movieId"]].copy()
         scored["predicted_rating"] = clipped_preds
-        top = scored.nlargest(top_n, "predicted_rating")
+        scored["title"] = scored["movieId"].map(lambda m: str(self.movie_meta.loc[int(m), "title"]))
+        scored["genres"] = scored["movieId"].map(lambda m: str(self.movie_meta.loc[int(m), "genres"]))
+        scored["genre_set"] = scored["genres"].map(self._genres_set)
+        top = self._diversity_rerank(scored, top_n=top_n, diversity_alpha=diversity_alpha)
+
+        user_top_counts = self._user_top_genre_counts(user_id=user_id, top_k=5)
+        user_top = set(user_top_counts.keys())
 
         scores = []
         for _, row in top.iterrows():
             movie_id = int(row["movieId"])
-            title = str(self.movie_meta.loc[movie_id, "title"])
-            genres = str(self.movie_meta.loc[movie_id, "genres"])
+            title = str(row["title"])
+            genres = str(row["genres"])
+            gset = row["genre_set"]
+            overlap = sorted(list(gset & user_top))
+            if overlap:
+                reason = f"High predicted rating; overlaps your top genres: {', '.join(overlap[:2])}."
+            else:
+                reason = "High predicted rating; adds some genre novelty."
             scores.append(
                 {
                     "movie_id": movie_id,
                     "title": title,
                     "genres": genres,
                     "predicted_rating": round(float(row["predicted_rating"]), 4),
+                    "reason": reason,
+                    "predicted_rating_raw": round(float(row["predicted_rating"]), 4),
+                    "overlap_penalty": round(float(row.get("overlap_penalty", 0.0)), 4),
+                    "adjusted_score": round(float(row.get("adjusted_score", row["predicted_rating"])), 4),
+                    "overlap_genres": row.get("overlap_genres", []),
                 }
             )
         return scores
@@ -392,6 +452,25 @@ class ModelRegistry:
             if os.path.exists(dl_log):
                 metrics["log_path"] = dl_log
         return metrics
+
+    def _user_top_genre_counts(self, user_id: int, top_k: int = 5) -> Dict[str, int]:
+        if "genres" not in self.train_df.columns:
+            return {}
+        user_rows = self.train_df[self.train_df["userId"] == user_id]
+        if user_rows.empty:
+            return {}
+        exploded = (
+            user_rows["genres"]
+            .dropna()
+            .astype(str)
+            .str.split("|")
+            .explode()
+            .str.strip()
+        )
+        if exploded.empty:
+            return {}
+        counts = exploded.value_counts().head(top_k)
+        return {str(k): int(v) for k, v in counts.items()}
 
     def model_info(self, model_id: str) -> Dict[str, Any]:
         """Returns moderate inspector payload (params/metrics/family-specific details)."""
@@ -438,18 +517,8 @@ class ModelRegistry:
         )
         gender = str(demo_row.iloc[0]["gender"]) if not demo_row.empty and pd.notna(demo_row.iloc[0]["gender"]) else None
 
-        top_genres: List[str] = []
-        if found and "genres" in self.train_df.columns:
-            genre_series = (
-                self.train_df[self.train_df["userId"] == user_id]["genres"]
-                .dropna()
-                .astype(str)
-                .str.split("|")
-                .explode()
-                .str.strip()
-            )
-            if not genre_series.empty:
-                top_genres = genre_series.value_counts().head(5).index.tolist()
+        top_genre_counts = self._user_top_genre_counts(user_id=user_id, top_k=5) if found else {}
+        top_genres: List[str] = list(top_genre_counts.keys())
 
         return {
             "user_id": user_id,
@@ -462,5 +531,6 @@ class ModelRegistry:
             "first_timestamp_train": first_ts,
             "last_timestamp_train": last_ts,
             "top_genres_train": top_genres,
+            "top_genre_counts": top_genre_counts,
         }
 
