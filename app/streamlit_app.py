@@ -217,6 +217,84 @@ def _render_taste_radar(user_counts: Dict[str, int], reco_counts: Dict[str, int]
     st.pyplot(fig, clear_figure=True, use_container_width=False, width=420)
 
 
+def _render_diversity_impact_panel(items: List[Dict[str, Any]], diversity_alpha: float) -> None:
+    st.markdown("### Diversity Impact & Formula")
+    st.latex(r"\mathrm{adjusted\_score}_i = \hat{r}_i - \alpha \cdot \mathrm{overlap}_i")
+    st.caption(
+        "Where r_hat is predicted rating, alpha is the diversity slider, and overlap is genre overlap with "
+        "already selected recommendations during greedy reranking."
+    )
+
+    if not items:
+        st.info("Run recommendations to compute diversity impact stats.")
+        return
+
+    penalties = [float(row.get("overlap_penalty") or 0.0) for row in items]
+    adjusted = [float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0) for row in items]
+    raw = [float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0) for row in items]
+    overlap_non_empty = sum(1 for row in items if row.get("overlap_genres"))
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Alpha (diversity)", f"{diversity_alpha:.2f}")
+    c2.metric("Avg Penalty", f"{(sum(penalties) / max(len(penalties), 1)):.4f}")
+    c3.metric("Overlap Hits", f"{overlap_non_empty}/{len(items)}")
+    c4.metric("Avg Adjusted Score", f"{(sum(adjusted) / max(len(adjusted), 1)):.4f}")
+
+    impact_rows = [
+        {
+            "movie_id": row.get("movie_id"),
+            "title": row.get("title"),
+            "raw_score": row.get("predicted_rating_raw", row.get("predicted_rating")),
+            "penalty": row.get("overlap_penalty", 0.0),
+            "adjusted_score": row.get("adjusted_score", row.get("predicted_rating")),
+            "overlap_genres": ", ".join(row.get("overlap_genres", [])),
+        }
+        for row in items
+    ]
+    with st.expander("Show Diversity Impact Table", expanded=False):
+        st.dataframe(impact_rows, use_container_width=True)
+
+    with st.expander("Worked Examples (term-by-term breakdown)", expanded=False):
+        if not impact_rows:
+            st.info("Run recommendations first to generate a real datapoint example.")
+        else:
+            st.markdown(
+                """
+**Terms in this formula**
+- `raw score (r_hat)`: model’s original predicted rating before diversity adjustment.
+- `alpha`: diversity strength set by slider (`0.00` to `1.00`).
+- `overlap`: how much this movie’s genres overlap with already selected recommendation genres.
+- `penalty`: `alpha * overlap`.
+- `adjusted score`: final rerank value = `raw score - penalty`.
+"""
+            )
+            st.latex(r"\text{adjusted\_score}=\hat{r}-\alpha\cdot overlap")
+
+            # Show multiple datapoints so users can compare behavior.
+            sample_count = min(3, len(impact_rows))
+            st.markdown(f"**Examples from current result set (showing {sample_count})**")
+            for i in range(sample_count):
+                ex = impact_rows[i]
+                raw_score = float(ex.get("raw_score") or 0.0)
+                penalty = float(ex.get("penalty") or 0.0)
+                adjusted_score = float(ex.get("adjusted_score") or 0.0)
+                # overlap = penalty / alpha, guarded when alpha is zero.
+                overlap = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
+                overlap_genres = ex.get("overlap_genres") or "None"
+                st.markdown(
+                    f"""
+**Example {i+1}:** `{ex.get("title")}` (`id={ex.get("movie_id")}`)
+
+- raw score \(\\hat{{r}}\\): `{raw_score:.4f}`
+- alpha: `{diversity_alpha:.2f}`
+- overlap (derived): `{overlap:.4f}`
+- penalty \(\\alpha \\cdot overlap\): `{penalty:.4f}`
+- overlap genres: `{overlap_genres}`
+- adjusted score: `{adjusted_score:.4f}`
+"""
+                )
+
+
 def render_header() -> None:
     st.title("MovieMind Web App")
     st.caption("Phase 8 UI: API-backed recommendations, explainability, model inspector, and NLP mode toggle.")
@@ -258,7 +336,10 @@ def recommend_page(models: List[Dict[str, Any]]) -> None:
             max_value=1.0,
             value=0.0,
             step=0.05,
-            help="0 = accuracy focus, 1 = stronger novelty/genre diversification.",
+            help=(
+                "Alpha in adjusted_score = predicted_rating - alpha * overlap. "
+                "0 = accuracy focus, higher alpha = stronger novelty/diversification."
+            ),
         )
         show_diversity_debug = st.checkbox("Show Diversity Math Debug", value=False)
     st.caption(f"Available userId range in training data: `{id_range['min_user_id']} - {id_range['max_user_id']}`")
@@ -399,6 +480,7 @@ Planned optional extension for new users:
         user_counts = s.get("top_genre_counts", {}) or {}
         reco_counts = _genre_counts_from_recommendations(st.session_state.get("last_recommendations", []))
         _render_taste_radar(user_counts=user_counts, reco_counts=reco_counts)
+    _render_diversity_impact_panel(st.session_state.get("last_recommendations", []), diversity_alpha)
 
 
 def explain_page(models: List[Dict[str, Any]]) -> None:
