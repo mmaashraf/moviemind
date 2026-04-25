@@ -1,0 +1,15 @@
+=== API Smoke Test ===
+GET /health 200 {'status': 'ok', 'service': 'moviemind-api'}
+GET /models 200 model_count=6
+  - baseline_global_mean available= True
+  - linear_regression available= True
+  - random_forest available= True
+  - gradient_boosting available= True
+  - ncf_baseline available= True
+  - ncf_tuned available= True
+GET /models/gradient_boosting/info 200
+keys= ['artifact_path', 'available', 'display_name', 'family', 'inspector', 'metrics', 'model_id', 'params']
+POST /predict 200 {'model_id': 'gradient_boosting', 'user_id': 1, 'movie_id': 1, 'predicted_rating': 4.4263, 'clipped_to_rating_scale': False}
+POST /recommend 200 items= 5
+top_item= {'movie_id': 3382, 'title': 'Song of Freedom (1936)', 'genres': 'Drama', 'predicted_rating': 5.0}
+POST /nlp/query 200 {'runtime_mode': 'local-llm', 'parsed_by': 'local-llm-fallback', 'confidence': 0.8, 'intent': 'recommend', 'filters': {'user_id': 10, 'top_n': 5, 'genre': 'action'}, 'model_hint': 'ncf_tuned', 'explanation': 'Local LLM mode selected; using safe fallback parser with strict schema.'}

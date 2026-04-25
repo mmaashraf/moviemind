@@ -231,3 +231,78 @@ MOVIEMIND_ENABLE_TSNE=1 python src/post_analysis.py
 ```
 
 This gives us reproducibility and stability while still allowing deeper visualization when environment supports it.
+
+---
+
+## 5. API, Web App, and Agentic Layer Concepts
+
+### FastAPI (Feynman Style)
+Think of FastAPI as a clean "service counter" between UI and models.
+Instead of UI code touching model files directly, UI sends structured requests like:
+"Give me top 10 movies for user 15 using Gradient Boosting."
+
+FastAPI then:
+1. validates input schema,
+2. chooses the model adapter,
+3. returns a consistent JSON response.
+
+This separation keeps the system modular and easier to test.
+
+### Why Streamlit for this capstone?
+Streamlit is the fastest way to build a serious AI demo interface in Python.
+It is ideal for:
+* model selection dropdowns,
+* recommendation tables,
+* explainability panels,
+* experiment toggles (like runtime mode).
+
+In short:
+*FastAPI = backend contract + inference engine*
+*Streamlit = interactive product experience*
+
+### Model Registry (Why we need it)
+A model registry is a single abstraction layer that hides model-specific differences.
+Without it, each endpoint would need custom logic for baseline vs sklearn vs PyTorch.
+With it, API routes call one unified interface:
+* list models
+* get model info
+* predict
+* recommend
+
+This makes model switching in UI simple and robust.
+
+### Model Inspector (Moderate Scope)
+Model Inspector is an explainability and transparency page.
+It answers:
+* Which model is this?
+* Is artifact available?
+* What are key parameters?
+* What metrics do we know?
+* For GB: which features are most important?
+* For DL: embedding size and parameter count.
+
+This improves trust and helps debugging when results look surprising.
+
+### Agentic Runtime Modes (Rule-only vs Local LLM vs API LLM)
+Natural language queries can be interpreted in different ways:
+
+1. **Rule-only**
+   Deterministic parser. Best for reproducible benchmarking.
+
+2. **Local LLM**
+   Better language flexibility, runs locally, usually lower privacy risk.
+
+3. **API LLM**
+   Strongest language quality, but depends on external service and config.
+
+### Why guardrails are mandatory for NLP parsing
+Natural language is ambiguous.
+If an LLM output is used directly without validation, it can produce unsupported keys, unsafe values, or unstable behavior.
+
+So we enforce:
+* schema validation,
+* whitelist of supported filter keys,
+* bounded numeric ranges (like top-N limits),
+* deterministic fallback parser.
+
+This keeps the agent helpful **and** reliable.

@@ -44,10 +44,16 @@
 - **Status:** **COMPLETED** (safe-mode run complete; t-SNE skipped by default to avoid local crash)
 
 ## Phase 7: Backend API Development
-- [ ] Build FastAPI endpoints `/recommend` and `/predict`
-- **Status:** *Pending*
+- [x] Build FastAPI endpoints `/health`, `/models`, `/models/{model_id}/info`, `/predict`, `/recommend`
+- [x] Implement model registry adapters for Baseline, ML, DL, Tuned DL
+- [x] Add NLP parser endpoint `/nlp/query` with runtime-mode contract and guardrails
+- [x] Run API smoke tests and live endpoint checks; save evidence under `evidence/phase7/`
+- **Status:** **COMPLETED**
 
 ## Phase 8: Web UI & NLP Agent Deployment
-- [ ] Build Streamlit "Iron Man" dashboard
-- [ ] Integrate NLP Agent for natural language queries
-- **Status:** *Pending*
+- [x] Build Streamlit web app with pages: Recommend, Explain, Model Inspector, System
+- [x] Add runtime toggle in UI (`Rule-only`, `Local LLM`, `API LLM`)
+- [x] Wire UI flows to FastAPI endpoints and validate startup behavior
+- [x] Capture UI/NLP evidence under `evidence/phase8/`
+- [x] Create dedicated wiki `WEBAPP_AGENT_WIKI.md`
+- **Status:** **COMPLETED**
