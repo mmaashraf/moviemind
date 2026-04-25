@@ -127,7 +127,7 @@ def _local_user_summary(user_id: int) -> Dict[str, Any]:
             "top_genres_train": [],
         }
 
-    top_genres = (
+    top_counts = (
         user_rows["genres"]
         .dropna()
         .astype(str)
@@ -136,10 +136,10 @@ def _local_user_summary(user_id: int) -> Dict[str, Any]:
         .str.strip()
         .value_counts()
         .head(5)
-        .index.tolist()
         if "genres" in user_rows.columns
-        else []
+        else pd.Series(dtype=int)
     )
+    top_genres = top_counts.index.tolist()
     age_val = user_rows["age"].dropna().iloc[0] if "age" in user_rows.columns and user_rows["age"].dropna().shape[0] > 0 else None
     occ_val = (
         user_rows["occupation"].dropna().iloc[0]
@@ -160,6 +160,7 @@ def _local_user_summary(user_id: int) -> Dict[str, Any]:
         "first_timestamp_train": first_ts,
         "last_timestamp_train": last_ts,
         "top_genres_train": top_genres,
+        "top_genre_counts": {str(k): int(v) for k, v in top_counts.items()},
     }
 
 
@@ -172,6 +173,48 @@ def _user_id_range() -> Dict[str, int]:
         "min_user_id": int(train_df["userId"].min()),
         "max_user_id": int(train_df["userId"].max()),
     }
+
+
+def _genre_counts_from_recommendations(items: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for row in items:
+        for g in str(row.get("genres", "")).split("|"):
+            g = g.strip()
+            if not g:
+                continue
+            counts[g] = counts.get(g, 0) + 1
+    return counts
+
+
+def _render_taste_radar(user_counts: Dict[str, int], reco_counts: Dict[str, int]) -> None:
+    labels = sorted(set(list(user_counts.keys()) + list(reco_counts.keys())))
+    if not labels:
+        st.info("No genre data available yet for taste map.")
+        return
+
+    user_vals = np.array([user_counts.get(k, 0) for k in labels], dtype=float)
+    reco_vals = np.array([reco_counts.get(k, 0) for k in labels], dtype=float)
+    user_max = user_vals.max() if user_vals.max() > 0 else 1.0
+    reco_max = reco_vals.max() if reco_vals.max() > 0 else 1.0
+    user_norm = user_vals / user_max
+    reco_norm = reco_vals / reco_max
+
+    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
+    angles = np.concatenate([angles, [angles[0]]])
+    user_plot = np.concatenate([user_norm, [user_norm[0]]])
+    reco_plot = np.concatenate([reco_norm, [reco_norm[0]]])
+
+    fig, ax = plt.subplots(figsize=(3.8, 3.8), subplot_kw={"projection": "polar"})
+    ax.plot(angles, user_plot, linewidth=2, label="User Taste (train)")
+    ax.fill(angles, user_plot, alpha=0.2)
+    ax.plot(angles, reco_plot, linewidth=2, label="Recommended Mix")
+    ax.fill(angles, reco_plot, alpha=0.15)
+    ax.set_thetagrids(angles[:-1] * 180 / np.pi, labels, fontsize=7)
+    ax.set_ylim(0, 1.0)
+    ax.set_title("Taste Map (normalized genre profile)", pad=14, fontsize=9)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.10, 1.08), fontsize=7)
+    fig.tight_layout(pad=0.8)
+    st.pyplot(fig, clear_figure=True, use_container_width=False, width=420)
 
 
 def render_header() -> None:
@@ -208,8 +251,18 @@ def recommend_page(models: List[Dict[str, Any]]) -> None:
     )
     top_n = cols[2].slider("Top N", min_value=1, max_value=50, value=10)
     runtime_label = cols[3].selectbox("NLP Runtime", list(RUNTIME_OPTIONS.keys()), index=1)
+    with st.expander("Advanced Recommendation Controls", expanded=False):
+        diversity_alpha = st.slider(
+            "Diversity",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.0,
+            step=0.05,
+            help="0 = accuracy focus, 1 = stronger novelty/genre diversification.",
+        )
+        show_diversity_debug = st.checkbox("Show Diversity Math Debug", value=False)
     st.caption(f"Available userId range in training data: `{id_range['min_user_id']} - {id_range['max_user_id']}`")
-    with st.expander("New User (Cold Start) - Optional TODO", expanded=False):
+    with st.expander("New User & Field Legends", expanded=False):
         st.markdown(
             """
 Current UI supports known training user IDs only.
@@ -219,6 +272,13 @@ Planned optional extension for new users:
 - Build a temporary profile vector from demographics + preferences.
 - Use popularity/diversity fallback until enough interactions are logged.
 """
+        )
+        st.markdown("**Gender Legend**")
+        st.write({"M": "male", "F": "female"})
+        st.markdown("**Occupation Legend (MovieLens 1M codes)**")
+        st.dataframe(
+            [{"code": code, "occupation": label} for code, label in OCCUPATION_LEGEND.items()],
+            use_container_width=True,
         )
 
     query = st.text_input("Optional natural-language request", placeholder="e.g., top 5 action movies for user 120 with tuned model")
@@ -235,29 +295,56 @@ Planned optional extension for new users:
     info_cols[3].metric("Age / Occupation", f"{s.get('age', '-')}/{s.get('occupation', '-')}")
     with st.expander("User Summary Details", expanded=False):
         st.json(s)
-    with st.expander("Field Legends (Occupation / Gender)", expanded=False):
-        st.markdown("**Gender Legend**")
-        st.write({"M": "male", "F": "female"})
-        st.markdown("**Occupation Legend (MovieLens 1M codes)**")
-        st.dataframe(
-            [{"code": code, "occupation": label} for code, label in OCCUPATION_LEGEND.items()],
-            use_container_width=True,
-        )
+    if s.get("top_genre_counts"):
+        st.markdown("**Taste Profile (Top Genres in Training)**")
+        genre_df = pd.DataFrame(
+            {"genre": list(s["top_genre_counts"].keys()), "count": list(s["top_genre_counts"].values())}
+        ).set_index("genre")
+        st.bar_chart(genre_df)
 
-    rec_btn, nlp_btn = st.columns(2)
+    st.markdown("### Actions")
+    rec_btn, nlp_btn = st.columns([1.4, 1])
     with rec_btn:
-        if st.button("Get Recommendations", type="primary"):
-            payload = {"model_id": model_map[selected_label], "user_id": int(user_id), "top_n": int(top_n)}
+        if st.button("Get Recommendations", type="primary", use_container_width=True):
+            payload = {
+                "model_id": model_map[selected_label],
+                "user_id": int(user_id),
+                "top_n": int(top_n),
+                "diversity_alpha": float(diversity_alpha),
+            }
             result = safe_api_post("/recommend", payload)
             if not result["ok"]:
                 st.error(result["error"])
             else:
                 items = result["data"]["recommendations"]
+                st.session_state["last_recommendations"] = items
                 st.success(f"Returned {len(items)} recommendations.")
-                st.dataframe(items, use_container_width=True)
+                display_rows = [
+                    {
+                        "movie_id": row.get("movie_id"),
+                        "title": row.get("title"),
+                        "genres": row.get("genres"),
+                        "predicted_rating": row.get("predicted_rating"),
+                        "reason": row.get("reason"),
+                    }
+                    for row in items
+                ]
+                st.dataframe(display_rows, use_container_width=True)
+                if show_diversity_debug and items:
+                    st.markdown("**Diversity Debug (score adjustment per selected item)**")
+                    debug_cols = [
+                        "movie_id",
+                        "title",
+                        "predicted_rating_raw",
+                        "overlap_penalty",
+                        "adjusted_score",
+                        "overlap_genres",
+                    ]
+                    debug_rows = [{k: row.get(k) for k in debug_cols} for row in items]
+                    st.dataframe(debug_rows, use_container_width=True)
 
     with nlp_btn:
-        if st.button("Parse Query (NLP)") and query.strip():
+        if st.button("Parse Query (NLP)", use_container_width=True) and query.strip():
             payload = {"query": query, "runtime_mode": RUNTIME_OPTIONS[runtime_label]}
             result = safe_api_post("/nlp/query", payload)
             if not result["ok"]:
@@ -269,12 +356,49 @@ Planned optional extension for new users:
                 parsed_model = data.get("model_hint") or model_map[selected_label]
                 parsed_user = int(data.get("filters", {}).get("user_id", user_id))
                 parsed_top_n = int(data.get("filters", {}).get("top_n", top_n))
-                rec_result = safe_api_post("/recommend", {"model_id": parsed_model, "user_id": parsed_user, "top_n": parsed_top_n})
+                rec_result = safe_api_post(
+                    "/recommend",
+                    {
+                        "model_id": parsed_model,
+                        "user_id": parsed_user,
+                        "top_n": parsed_top_n,
+                        "diversity_alpha": float(diversity_alpha),
+                    },
+                )
                 if rec_result["ok"]:
                     st.write("Recommendations from parsed intent")
-                    st.dataframe(rec_result["data"]["recommendations"], use_container_width=True)
+                    parsed_items = rec_result["data"]["recommendations"]
+                    st.session_state["last_recommendations"] = parsed_items
+                    parsed_display = [
+                        {
+                            "movie_id": row.get("movie_id"),
+                            "title": row.get("title"),
+                            "genres": row.get("genres"),
+                            "predicted_rating": row.get("predicted_rating"),
+                            "reason": row.get("reason"),
+                        }
+                        for row in parsed_items
+                    ]
+                    st.dataframe(parsed_display, use_container_width=True)
+                    if show_diversity_debug and parsed_items:
+                        st.markdown("**Diversity Debug (score adjustment per selected item)**")
+                        debug_cols = [
+                            "movie_id",
+                            "title",
+                            "predicted_rating_raw",
+                            "overlap_penalty",
+                            "adjusted_score",
+                            "overlap_genres",
+                        ]
+                        debug_rows = [{k: row.get(k) for k in debug_cols} for row in parsed_items]
+                        st.dataframe(debug_rows, use_container_width=True)
                 else:
                     st.error(rec_result["error"])
+
+    with st.expander("Taste Map (Game-Style Radar)", expanded=False):
+        user_counts = s.get("top_genre_counts", {}) or {}
+        reco_counts = _genre_counts_from_recommendations(st.session_state.get("last_recommendations", []))
+        _render_taste_radar(user_counts=user_counts, reco_counts=reco_counts)
 
 
 def explain_page(models: List[Dict[str, Any]]) -> None:
@@ -566,7 +690,8 @@ def _render_torchviz_graph(model, model_label: str) -> None:
         output = model(user_idx, movie_idx, dense)
         dot = make_dot(output, params=dict(model.named_parameters()))
         png_bytes = dot.pipe(format="png")
-        st.image(png_bytes, use_container_width=True)
+        # Keep graph readable in demos without taking over the whole page.
+        st.image(png_bytes, width=900)
     except Exception as exc:
         st.info(
             "Torchviz graph could not be rendered on this environment. "
