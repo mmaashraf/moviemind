@@ -1,6 +1,6 @@
 # Context Handover: Movie Recommendation System Capstone
 
-**Last Updated:** Phase 6 (Post-Modeling Analysis Completed in Safe Mode)
+**Last Updated:** Phase 8 (API + UI + NLP Baseline Delivered)
 
 ## Project Overview
 Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommendation System following the AI Development Life Cycle (AIDLC). Full plan is in `AI_LIFECYCLE_PLAN.md`. Progress is tracked in `PROGRESS_TRACKER.md`.
@@ -39,7 +39,16 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
     *   Retrained best tuned DL config: validation RMSE 1.0302 (5-epoch retrain run).
     *   Saved embeddings + PCA artifacts and Gradient Boosting feature-importance outputs in `evidence/phase6/`.
     *   t-SNE is now disabled by default due local segmentation fault risk; enable manually with `MOVIEMIND_ENABLE_TSNE=1`.
-*   **Next Step:** Start **Phase 7 (Backend API Development)** with model-selection support so all trained models are available from API/UI.
+*   **Phase 7 (Backend API):** COMPLETED.
+    *   Added FastAPI service in `src/api/` with `/health`, `/models`, `/models/{model_id}/info`, `/predict`, `/recommend`, `/nlp/query`.
+    *   Added unified model registry to serve Baseline, ML, DL, Tuned DL from one interface.
+    *   Saved smoke and live API evidence under `evidence/phase7/`.
+*   **Phase 8 (Web UI + NLP Layer):** COMPLETED (initial production baseline).
+    *   Added Streamlit app in `app/streamlit_app.py` with pages: Recommend, Explain, Model Inspector, System.
+    *   Added runtime mode toggle (`Rule-only`, `Local LLM`, `API LLM`) and guardrailed parser contract.
+    *   Added WebApp/Agent documentation in `WEBAPP_AGENT_WIKI.md`.
+    *   Saved UI/NLP evidence under `evidence/phase8/`.
+*   **Next Step:** Phase 8.x enhancements (advanced model inspector: side-by-side comparisons, richer diagnostics download, stronger local/API LLM adapters).
 
 ## Key EDA Insights That Drive Design
 *   95% sparsity means simple KNN fails. Must use embeddings/matrix factorization.
@@ -65,4 +74,4 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
 *   **References:** Credit all external code sources.
 *   **Comments:** Moderate, simple-language comments.
 *   **File Operations:** Restricted to `/Users/ashraf/iitd-aiml/final_project/`.
-*   **Git/Python Execution:** Executed by the user from terminal due to local environment restrictions.
+*   **Git/Python Execution:** User terminal remains source of truth for final run confirmation; agent maintains reproducible scripts and evidence logs.

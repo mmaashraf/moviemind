@@ -1,0 +1,4 @@
+=== NLP Runtime Mode Checks ===
+rule-only 200 rule-parser 0.9
+local-llm 200 local-llm-fallback 0.8
+api-llm 200 api-llm-fallback 0.85

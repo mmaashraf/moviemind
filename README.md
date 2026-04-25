@@ -13,7 +13,8 @@ phase outputs, evidence capture, and milestone-based documentation updates.
 - Phase 5 (DL Baseline): completed (NCF baseline underperforms GB)
 - Phase 5b (Optuna tuning): completed (50 trials, best RMSE 1.0061)
 - Phase 6 (Post-analysis): completed (safe-mode run; t-SNE skipped by default)
-- Phase 7+ (API, UI, Agent): pending execution
+- Phase 7 (API): completed
+- Phase 8 (UI + NLP baseline): completed
 
 ## Architecture and Key Features
 
@@ -41,9 +42,9 @@ phase outputs, evidence capture, and milestone-based documentation updates.
 ### 0) Environment
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
 ### 1) Data Acquisition
@@ -136,10 +137,62 @@ Optional outputs (only when `MOVIEMIND_ENABLE_TSNE=1`):
 - `evidence/phase6/user_embeddings_tsne_2d_sample.csv`
 - `evidence/phase6/user_embeddings_tsne_2d_sample.png`
 
+### 7) Backend API (FastAPI)
+
+Start API:
+```bash
+source .venv/bin/activate
+uvicorn src.api.app:app --host 127.0.0.1 --port 8000
+```
+
+Core endpoints:
+- `GET /health`
+- `GET /models`
+- `GET /models/{model_id}/info`
+- `POST /predict`
+- `POST /recommend`
+- `POST /nlp/query`
+
+Expected phase artifacts:
+- `src/api/app.py`
+- `src/api/model_registry.py`
+- `src/api/schemas.py`
+- `src/api/nlp.py`
+- `evidence/phase7/api_smoke_test_2026-04-24.txt`
+- `evidence/phase7/phase7_milestone_log_2026-04-24.md`
+
+### 8) Web UI + NLP Runtime Toggle (Streamlit)
+
+Start UI:
+```bash
+source .venv/bin/activate
+streamlit run app/streamlit_app.py --server.port 8502
+```
+
+UI pages:
+- Recommend
+- Explain
+- Model Inspector
+- System
+
+NLP runtime modes:
+- `Rule-only`
+- `Local LLM`
+- `API LLM` (guarded fallback unless explicitly configured)
+
+Expected phase artifacts:
+- `app/streamlit_app.py`
+- `WEBAPP_AGENT_WIKI.md`
+- `evidence/phase8/streamlit_root_response_2026-04-24.html`
+- `evidence/phase8/nlp_live_2026-04-24.json`
+- `evidence/phase8/phase8_milestone_log_2026-04-24.md`
+
 ## Evidence Map
 
 - `evidence/phase5b/`: tuning observations and result snapshots
 - `evidence/phase6/`: post-analysis outputs and final summary
+- `evidence/phase7/`: API smoke/live checks and milestone log
+- `evidence/phase8/`: UI/NLP smoke checks and milestone log
 - `evidence/code_reviews/`: periodic review notes and findings
 
 ## Milestone Update Protocol (Mandatory)
