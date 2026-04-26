@@ -1,0 +1,8 @@
+=== ML tuning on train/val/test (70/10/20) ===
+train_rows=700146 val_rows=100020 test_rows=200043
+fast_tuning_sample_rows train=200000 val=100000 (for speed; final tuned test eval remains on full test split)
+saved_default_metrics=evidence/phase9_split_eval/ml_default_val_test_metrics_70_10_20.csv
+saved_tuned_metrics=evidence/phase9_split_eval/ml_tuned_val_test_metrics_70_10_20.csv
+saved_best_params=models/best_ml_params_70_10_20.json
+rf_best_val_rmse=0.9173
+gb_best_val_rmse=0.9156

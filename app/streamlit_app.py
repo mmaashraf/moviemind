@@ -285,10 +285,10 @@ def _render_diversity_impact_panel(items: List[Dict[str, Any]], diversity_alpha:
                     f"""
 **Example {i+1}:** `{ex.get("title")}` (`id={ex.get("movie_id")}`)
 
-- raw score \(\\hat{{r}}\\): `{raw_score:.4f}`
+- raw score (r_hat): `{raw_score:.4f}`
 - alpha: `{diversity_alpha:.2f}`
 - overlap (derived): `{overlap:.4f}`
-- penalty \(\\alpha \\cdot overlap\): `{penalty:.4f}`
+- penalty (alpha * overlap): `{penalty:.4f}`
 - overlap genres: `{overlap_genres}`
 - adjusted score: `{adjusted_score:.4f}`
 """
@@ -413,15 +413,29 @@ Planned optional extension for new users:
                 st.dataframe(display_rows, use_container_width=True)
                 if show_diversity_debug and items:
                     st.markdown("**Diversity Debug (score adjustment per selected item)**")
-                    debug_cols = [
-                        "movie_id",
-                        "title",
-                        "predicted_rating_raw",
-                        "overlap_penalty",
-                        "adjusted_score",
-                        "overlap_genres",
-                    ]
-                    debug_rows = [{k: row.get(k) for k in debug_cols} for row in items]
+                    debug_rows = []
+                    for row in items:
+                        raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
+                        penalty = float(row.get("overlap_penalty") or 0.0)
+                        adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
+                        overlap_genres = row.get("overlap_genres") or []
+                        movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
+                        overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
+                        debug_rows.append(
+                            {
+                                "movie_id": row.get("movie_id"),
+                                "title": row.get("title"),
+                                "predicted_rating_raw": round(raw, 4),
+                                "diversity_alpha": round(float(diversity_alpha), 4),
+                                "overlap_ratio": round(float(overlap_ratio), 4),
+                                "overlap_count": len(overlap_genres),
+                                "movie_genre_count": len(movie_genres),
+                                "overlap_penalty": round(penalty, 4),
+                                "adjusted_score": round(adjusted, 4),
+                                "calc_check": round(raw - penalty, 4),
+                                "overlap_genres": overlap_genres,
+                            }
+                        )
                     st.dataframe(debug_rows, use_container_width=True)
 
     with nlp_btn:
@@ -463,47 +477,46 @@ Planned optional extension for new users:
                     st.dataframe(parsed_display, use_container_width=True)
                     if show_diversity_debug and parsed_items:
                         st.markdown("**Diversity Debug (score adjustment per selected item)**")
-                        debug_cols = [
-                            "movie_id",
-                            "title",
-                            "predicted_rating_raw",
-                            "overlap_penalty",
-                            "adjusted_score",
-                            "overlap_genres",
-                        ]
-                        debug_rows = [{k: row.get(k) for k in debug_cols} for row in parsed_items]
+                        debug_rows = []
+                        for row in parsed_items:
+                            raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
+                            penalty = float(row.get("overlap_penalty") or 0.0)
+                            adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
+                            overlap_genres = row.get("overlap_genres") or []
+                            movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
+                            overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
+                            debug_rows.append(
+                                {
+                                    "movie_id": row.get("movie_id"),
+                                    "title": row.get("title"),
+                                    "predicted_rating_raw": round(raw, 4),
+                                    "diversity_alpha": round(float(diversity_alpha), 4),
+                                    "overlap_ratio": round(float(overlap_ratio), 4),
+                                    "overlap_count": len(overlap_genres),
+                                    "movie_genre_count": len(movie_genres),
+                                    "overlap_penalty": round(penalty, 4),
+                                    "adjusted_score": round(adjusted, 4),
+                                    "calc_check": round(raw - penalty, 4),
+                                    "overlap_genres": overlap_genres,
+                                }
+                            )
                         st.dataframe(debug_rows, use_container_width=True)
                 else:
                     st.error(rec_result["error"])
 
     with st.expander("Taste Map (Game-Style Radar)", expanded=False):
+        st.caption(
+            "Normalization note: radar values are scaled to [0,1] per profile. "
+            "1.0 means strongest genre in that profile, not absolute rating/count."
+        )
+        st.caption(
+            "Interpretation note: this radar is genre-frequency based (from training history and "
+            "current recommendations), not an embedding-space visualization."
+        )
         user_counts = s.get("top_genre_counts", {}) or {}
         reco_counts = _genre_counts_from_recommendations(st.session_state.get("last_recommendations", []))
         _render_taste_radar(user_counts=user_counts, reco_counts=reco_counts)
     _render_diversity_impact_panel(st.session_state.get("last_recommendations", []), diversity_alpha)
-
-
-def explain_page(models: List[Dict[str, Any]]) -> None:
-    st.subheader("Explain")
-    if not models:
-        st.info("No models available from API.")
-        return
-    model_map = {f"{m['display_name']} ({m['model_id']})": m["model_id"] for m in models}
-    selected = st.selectbox("Model for explanation", list(model_map.keys()), key="explain_model")
-    info_result = safe_api_get(f"/models/{model_map[selected]}/info")
-    if not info_result["ok"]:
-        st.error(info_result["error"])
-        return
-    info = info_result["data"]
-    st.write("Model summary")
-    st.json(
-        {
-            "family": info["family"],
-            "available": info["available"],
-            "metrics": info.get("metrics", {}),
-            "inspector": info.get("inspector", {}),
-        }
-    )
 
 
 def inspector_page(models: List[Dict[str, Any]]) -> None:
@@ -697,19 +710,39 @@ def _build_tuned_ncf_model():
     params = _parse_best_dl_params(PROJECT_ROOT / "models" / "best_dl_params.txt")
     if not model_path.exists() or not dims or not params:
         return None
+    state_dict = torch.load(model_path, map_location="cpu")
+
+    # First attempt: build from best_dl_params.txt (expected path).
     n_layers = int(params.get("n_layers", 3))
     hidden_layers = [int(params.get(f"n_units_l{i}", 128)) for i in range(n_layers)]
     embedding_dim = int(params.get("embedding_dim", 64))
     dropout_rate = float(params.get("dropout_rate", 0.2))
-    model = DynamicNCF(
-        num_users=dims["num_users"],
-        num_movies=dims["num_movies"],
-        num_dense_features=6,
-        embedding_dim=embedding_dim,
-        hidden_layers=hidden_layers,
-        dropout_rate=dropout_rate,
-    )
-    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+
+    def _build_model(emb_dim: int, hidden: List[int], drop: float):
+        return DynamicNCF(
+            num_users=dims["num_users"],
+            num_movies=dims["num_movies"],
+            num_dense_features=6,
+            embedding_dim=emb_dim,
+            hidden_layers=hidden,
+            dropout_rate=drop,
+        )
+
+    model = _build_model(embedding_dim, hidden_layers, dropout_rate)
+    try:
+        model.load_state_dict(state_dict)
+    except RuntimeError:
+        # Fallback: infer architecture from checkpoint weights if params file and checkpoint drift.
+        emb_from_ckpt = int(state_dict["user_embedding.weight"].shape[1])
+        linear_keys = sorted(
+            [k for k in state_dict.keys() if k.startswith("fc_layers.") and k.endswith(".weight")],
+            key=lambda x: int(x.split(".")[1]),
+        )
+        if not linear_keys:
+            raise
+        inferred_hidden = [int(state_dict[k].shape[0]) for k in linear_keys[:-1]]
+        model = _build_model(emb_from_ckpt, inferred_hidden, dropout_rate)
+        model.load_state_dict(state_dict)
     model.eval()
     return model
 
@@ -1111,10 +1144,9 @@ Why this matters:
 def main() -> None:
     render_header()
     models = load_models()
-    tab_reco, tab_explain, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_system = st.tabs(
+    tab_reco, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_system = st.tabs(
         [
             "Recommend",
-            "Explain",
             "Model Inspector",
             "Embedding Space",
             "Model Visualizers",
@@ -1125,8 +1157,6 @@ def main() -> None:
     )
     with tab_reco:
         recommend_page(models)
-    with tab_explain:
-        explain_page(models)
     with tab_inspect:
         inspector_page(models)
     with tab_embed:

@@ -1,0 +1,147 @@
+--- Phase 4: ML Model Training ---
+
+Training set: 700,146 rows, 7 features
+Test set:     200,043 rows, 7 features
+
+--- Baseline (Global Mean) ---
+  RMSE: 1.1048
+  MAE:  0.9181
+  Time: 0.0s
+--- Linear Regression ---
+  RMSE: 0.9005
+  MAE:  0.7088
+  Time: 0.07s
+--- Random Forest ---
+  RMSE: 0.8998
+  MAE:  0.7084
+  Time: 21.05s
+Traceback (most recent call last):
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/src/ml_models.py", line 163, in <module>
+    main()
+    ~~~~^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/src/ml_models.py", line 147, in main
+    results.append(train_gradient_boosting(X_train, y_train, X_test, y_test))
+                   ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/src/ml_models.py", line 117, in train_gradient_boosting
+    joblib.dump(model, os.path.join(MODELS_DIR, 'gradient_boosting.pkl'))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/.venv/lib/python3.13/site-packages/joblib/numpy_pickle.py", line 600, in dump
+    NumpyPickler(f, protocol=protocol).dump(value)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 484, in dump
+    self.save(obj)
+    ~~~~~~~~~^^^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/.venv/lib/python3.13/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 601, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 715, in save_reduce
+    save(state)
+    ~~~~^^^^^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/.venv/lib/python3.13/site-packages/joblib/numpy_pickle.py", line 395, in save
+    return Pickler.save(self, obj)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 990, in save_dict
+    self._batch_setitems(obj.items())
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 1014, in _batch_setitems
+    save(v)
+    ~~~~^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/.venv/lib/python3.13/site-packages/joblib/numpy_pickle.py", line 392, in save
+    wrapper.write_array(obj, self)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/ashraf/iitd-aiml/final_project/moviemind/.venv/lib/python3.13/site-packages/joblib/numpy_pickle.py", line 131, in write_array
+    pickle.dump(array, pickler.file_handle, protocol=5)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 1794, in _dump
+    buffer_callback=buffer_callback).dump(obj)
+                                     ~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 484, in dump
+    self.save(obj)
+    ~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 601, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 715, in save_reduce
+    save(state)
+    ~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 920, in save_tuple
+    save(element)
+    ~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 950, in save_list
+    self._batch_appends(obj)
+    ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 974, in _batch_appends
+    save(x)
+    ~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 601, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 715, in save_reduce
+    save(state)
+    ~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 990, in save_dict
+    self._batch_setitems(obj.items())
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 1014, in _batch_setitems
+    save(v)
+    ~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 601, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 690, in save_reduce
+    save(args)
+    ~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 905, in save_tuple
+    save(element)
+    ~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 601, in save
+    self.save_reduce(obj=obj, *rv)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 715, in save_reduce
+    save(state)
+    ~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 905, in save_tuple
+    save(element)
+    ~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 990, in save_dict
+    self._batch_setitems(obj.items())
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 1014, in _batch_setitems
+    save(v)
+    ~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 558, in save
+    f(self, obj)  # Call unbound method with explicit self
+    ~^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 990, in save_dict
+    self._batch_setitems(obj.items())
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 1014, in _batch_setitems
+    save(v)
+    ~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pickle.py", line 576, in save
+    rv = reduce(self.proto)
+AttributeError: module 'pickle' has no attribute 'PickleBuffer'

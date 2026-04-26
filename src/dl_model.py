@@ -102,16 +102,23 @@ def main():
     
     # 1. Load Data
     train_df = pd.read_csv(os.path.join(PROCESSED_DIR, 'train_features.csv'))
-    test_df = pd.read_csv(os.path.join(PROCESSED_DIR, 'test_features.csv'))
+    val_path = os.path.join(PROCESSED_DIR, 'val_features.csv')
+    if os.path.exists(val_path):
+        eval_df = pd.read_csv(val_path)
+        eval_label = "val"
+    else:
+        # Backward-compatible fallback for old 2-way split artifacts.
+        eval_df = pd.read_csv(os.path.join(PROCESSED_DIR, 'test_features.csv'))
+        eval_label = "test"
     
-    num_users = max(train_df['userId'].max(), test_df['userId'].max())
-    num_movies = max(train_df['movieId'].max(), test_df['movieId'].max())
+    num_users = max(train_df['userId'].max(), eval_df['userId'].max())
+    num_movies = max(train_df['movieId'].max(), eval_df['movieId'].max())
     
     train_dataset = MovieLensDataset(train_df)
-    test_dataset = MovieLensDataset(test_df)
+    eval_dataset = MovieLensDataset(eval_df)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    eval_loader = DataLoader(eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
     
     # 2. Initialize Model
     # Determine device (Use Apple Silicon MPS if available, else CPU)
@@ -156,17 +163,22 @@ def main():
         model.eval()
         running_val_loss = 0.0
         with torch.no_grad():
-            for users, movies, dense, ratings in test_loader:
+            for users, movies, dense, ratings in eval_loader:
                 users, movies, dense, ratings = users.to(device), movies.to(device), dense.to(device), ratings.to(device)
                 outputs = model(users, movies, dense)
                 loss = criterion(outputs, ratings)
                 running_val_loss += loss.item() * users.size(0)
                 
-        epoch_val_loss = running_val_loss / len(test_dataset)
+        epoch_val_loss = running_val_loss / len(eval_dataset)
         val_losses.append(epoch_val_loss)
         
         epoch_duration = time.time() - epoch_start_time
-        msg_epoch = f"Epoch {epoch+1:02d}/{EPOCHS} | Time: {epoch_duration:.1f}s | Train Loss (MSE): {epoch_train_loss:.4f} | Val Loss (MSE): {epoch_val_loss:.4f} | Val RMSE: {np.sqrt(epoch_val_loss):.4f}"
+        msg_epoch = (
+            f"Epoch {epoch+1:02d}/{EPOCHS} | Time: {epoch_duration:.1f}s | "
+            f"Train Loss (MSE): {epoch_train_loss:.4f} | "
+            f"{eval_label.capitalize()} Loss (MSE): {epoch_val_loss:.4f} | "
+            f"{eval_label.capitalize()} RMSE: {np.sqrt(epoch_val_loss):.4f}"
+        )
         print(msg_epoch)
         log_to_file(msg_epoch)
         

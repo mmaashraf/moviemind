@@ -51,20 +51,29 @@ def engineer_features(ratings, movies, users):
     
     return df
 
-def time_based_split(df, test_size=0.2):
+def time_based_split_three_way(df, train_size=0.7, test_size=0.2, val_size=0.1):
     """
-    Splits the data based on timestamp to simulate real-world prediction (future).
-    Prevents data leakage.
+    Splits data chronologically into train/val/test using explicit overall ratios.
+    Default is 70/10/20 (train/val/test) over the full timeline.
     """
-    print(f"5. Performing Time-Based Train/Test Split (Test Size: {test_size * 100}%)...")
-    df_sorted = df.sort_values('timestamp')
-    
-    split_index = int(len(df_sorted) * (1 - test_size))
-    
-    train_df = df_sorted.iloc[:split_index]
-    test_df = df_sorted.iloc[split_index:]
-    
-    return train_df, test_df
+    ratio_sum = train_size + test_size + val_size
+    if not np.isclose(ratio_sum, 1.0):
+        raise ValueError(f"Split ratios must sum to 1.0, got {ratio_sum:.4f}")
+
+    print(
+        "5. Performing Time-Based Train/Val/Test Split "
+        f"(Train: {train_size * 100:.1f}%, Val: {val_size * 100:.1f}%, Test: {test_size * 100:.1f}%)..."
+    )
+    df_sorted = df.sort_values("timestamp")
+
+    train_end = int(len(df_sorted) * train_size)
+    val_end = train_end + int(len(df_sorted) * val_size)
+
+    train_df = df_sorted.iloc[:train_end]
+    val_df = df_sorted.iloc[train_end:val_end]
+    test_df = df_sorted.iloc[val_end:]
+
+    return train_df, val_df, test_df
 
 def main():
     print("--- Starting Feature Engineering Phase ---")
@@ -76,17 +85,19 @@ def main():
     full_dataset = engineer_features(ratings, movies, users)
     
     # Split
-    train_df, test_df = time_based_split(full_dataset)
+    train_df, val_df, test_df = time_based_split_three_way(full_dataset)
     
     print("6. Saving processed datasets...")
     # Saving as CSV. Note: For massive datasets, Parquet is better, but CSV is universally easy to debug.
     train_path = os.path.join(PROCESSED_DIR, 'train_features.csv')
+    val_path = os.path.join(PROCESSED_DIR, 'val_features.csv')
     test_path = os.path.join(PROCESSED_DIR, 'test_features.csv')
     
     train_df.to_csv(train_path, index=False)
+    val_df.to_csv(val_path, index=False)
     test_df.to_csv(test_path, index=False)
     
-    print(f"Done! Train Shape: {train_df.shape}, Test Shape: {test_df.shape}")
+    print(f"Done! Train Shape: {train_df.shape}, Val Shape: {val_df.shape}, Test Shape: {test_df.shape}")
     print(f"Data saved to {PROCESSED_DIR}/")
 
 if __name__ == "__main__":

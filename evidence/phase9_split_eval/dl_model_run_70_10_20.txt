@@ -1,0 +1,20 @@
+/Users/ashraf/iitd-aiml/final_project/moviemind/src/dl_model.py:107: DtypeWarning: Columns (0: zipCode) have mixed types. Specify dtype option on import or set low_memory=False.
+  eval_df = pd.read_csv(val_path)
+--- Phase 5: Deep Learning (Neural Collaborative Filtering) ---
+
+Training on device: mps
+
+Epoch 01/10 | Time: 9.9s | Train Loss (MSE): 2.0980 | Val Loss (MSE): 1.9125 | Val RMSE: 1.3829
+Epoch 02/10 | Time: 7.1s | Train Loss (MSE): 1.2045 | Val Loss (MSE): 1.6544 | Val RMSE: 1.2862
+Epoch 03/10 | Time: 7.2s | Train Loss (MSE): 0.9783 | Val Loss (MSE): 1.8645 | Val RMSE: 1.3655
+Epoch 04/10 | Time: 7.3s | Train Loss (MSE): 0.9008 | Val Loss (MSE): 1.8454 | Val RMSE: 1.3584
+Epoch 05/10 | Time: 7.3s | Train Loss (MSE): 0.8732 | Val Loss (MSE): 1.8837 | Val RMSE: 1.3725
+Epoch 06/10 | Time: 7.7s | Train Loss (MSE): 0.8557 | Val Loss (MSE): 1.5817 | Val RMSE: 1.2577
+Epoch 07/10 | Time: 7.6s | Train Loss (MSE): 0.8445 | Val Loss (MSE): 1.6196 | Val RMSE: 1.2727
+Epoch 08/10 | Time: 7.4s | Train Loss (MSE): 0.8389 | Val Loss (MSE): 1.4615 | Val RMSE: 1.2089
+Epoch 09/10 | Time: 7.5s | Train Loss (MSE): 0.8335 | Val Loss (MSE): 1.5333 | Val RMSE: 1.2383
+Epoch 10/10 | Time: 7.5s | Train Loss (MSE): 0.8299 | Val Loss (MSE): 1.4393 | Val RMSE: 1.1997
+
+Training Complete in 1.28 minutes.
+Model saved to models/ncf_model.pt
+Loss curve saved to models/dl_loss_curve.png
