@@ -1,0 +1,39 @@
+[RandomForest] trial 1/8 rmse=0.9165 params={'n_estimators': 150, 'max_depth': 10, 'min_samples_leaf': 1, 'random_state': 42, 'n_jobs': -1}
+[RandomForest] trial 2/8 rmse=0.9165 params={'n_estimators': 150, 'max_depth': 10, 'min_samples_leaf': 3, 'random_state': 42, 'n_jobs': -1}
+[RandomForest] trial 3/8 rmse=0.9203 params={'n_estimators': 150, 'max_depth': 16, 'min_samples_leaf': 1, 'random_state': 42, 'n_jobs': -1}
+[RandomForest] trial 4/8 rmse=0.9196 params={'n_estimators': 150, 'max_depth': 16, 'min_samples_leaf': 3, 'random_state': 42, 'n_jobs'[GradientBoosting] trial 1/4 rmse=0.9156 params={'n_estimators': 120, 'learning_rate': 0.05, 'max_depth': 4, 'random_state': 42}
+[GradientBoosting] trial 2/4 rmse=0.9162 params={'n_estimators': 120, 'learning_rate': 0.1, 'max_depth': 4, 'random_state': 42}
+[GradientBoosting] trial 3/4 rmse=0.9158 params={'n_estimators': 180, 'learning_rate': 0.05, 'max_depth': 4, 'random_state': 42}
+[GradientBoosting] trial 4/4 rmse=0.9162 params={'n_estimators': 180, 'learning_rate': 0.1, 'max_depth': 4, 'random_state': 42}
+=== ML tuning on train/val/test (70/10/20) ===
+train_rows=700146 val_rows=100020 test_rows=200043
+fast_tuning_sample_rows train=200000 val=100000 (for speed; final tuned test eval remains on full test split)
+saved_default_metrics=evidence/phase9_split_eval/ml_default_val_test_metrics_70_10_20.csv
+saved_tuned_metrics=evidence/phase9_split_eval/ml_tuned_val_test_metrics_70_10_20.csv
+saved_best_params=models/best_ml_params_70_10_20.json
+rf_best_val_rmse=0.9173
+gb_best_val_rmse=0.9156
+
+--- Tuned model metrics ---
+                         model     rmse      mae  fit_sec
+     Random Forest Tuned - VAL 0.916500 0.725055    31.40
+    Random Forest Tuned - TEST 0.899788 0.708398    31.40
+ Gradient Boosting Tuned - VAL 0.915596 0.725359    77.54
+Gradient Boosting Tuned - TEST 0.899281 0.708217    77.54
+random_state': 42}
+[GradientBoosting] trial 7/8 rmse=0.9155 params={'n_estimators': 250, 'learning_rate': 0.1, 'max_depth': 3, 'random_state': 42}
+[GradientBoosting] trial 8/8 rmse=0.9149 params={'n_estimators': 250, 'learning_rate': 0.1, 'max_depth': 5, 'random_state': 42}
+=== ML tuning on train/val/test (70/10/20) ===
+train_rows=700146 val_rows=100020 test_rows=200043
+saved_default_metrics=evidence/phase9_split_eval/ml_default_val_test_metrics_70_10_20.csv
+saved_tuned_metrics=evidence/phase9_split_eval/ml_tuned_val_test_metrics_70_10_20.csv
+saved_best_params=models/best_ml_params_70_10_20.json
+rf_best_val_rmse=0.9164
+gb_best_val_rmse=0.9147
+
+--- Tuned model metrics ---
+                         model     rmse      mae  fit_sec
+     Random Forest Tuned - VAL 0.916422 0.724933    45.01
+    Random Forest Tuned - TEST 0.899660 0.708246    45.01
+ Gradient Boosting Tuned - VAL 0.914702 0.723331   213.71
+Gradient Boosting Tuned - TEST 0.898097 0.706518   213.71

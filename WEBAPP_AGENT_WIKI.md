@@ -54,6 +54,7 @@ High-level runtime flow:
   - `model_id`
   - `user_id`
   - `top_n`
+  - `diversity_alpha`
 - Response:
   - ordered list of recommendation items with title, genres, and score.
 
@@ -76,9 +77,13 @@ High-level runtime flow:
 - Best for reproducibility and strict evaluations.
 
 ### `Local LLM`
-- Planned local-model interpretation mode.
-- Current implementation uses guarded fallback parser to preserve schema safety.
-- Best for offline-first workflows while keeping deterministic behavior.
+- Ollama-backed local parser with strict JSON-schema guardrails.
+- Runtime calls local endpoint and validates intent/filters/model hint.
+- If local model is unavailable, automatically falls back to deterministic parser.
+- Env controls:
+  - `MOVIEMIND_OLLAMA_URL` (default `http://127.0.0.1:11434`)
+  - `MOVIEMIND_OLLAMA_MODEL` (default `llama3.1:8b`)
+  - `MOVIEMIND_OLLAMA_TIMEOUT_SEC` (default `12`)
 
 ### `API LLM`
 - Optional cloud-LLM path.
@@ -124,6 +129,10 @@ Advanced compare/download diagnostics are deferred to Phase 8.x.
    - Symptom: API LLM mode falls back to guarded parser.
    - Fix: configure API credentials/flag when API LLM path is implemented.
 
+5. **Local LLM unavailable**
+   - Symptom: Local LLM mode returns `local-llm-fallback`.
+   - Fix: start Ollama and pull selected model, then re-test `/nlp/query`.
+
 ## 6) Reproducible Run/Test Steps
 
 From project root:
@@ -143,6 +152,8 @@ From project root:
    - `curl http://127.0.0.1:8000/health`
    - `curl http://127.0.0.1:8000/models`
    - `curl -X POST http://127.0.0.1:8000/nlp/query -H "Content-Type: application/json" -d '{"query":"top 5 action movies for user 10 tuned model","runtime_mode":"local-llm"}'`
+   - `bash scripts/test_local_llm.sh`
+     - Saves smoke + latency evidence to `evidence/phase8/local_llm_smoke_<timestamp>.txt`
 
 5. Evidence capture:
    - Save command outputs/logs under `evidence/phase7/` and `evidence/phase8/`.

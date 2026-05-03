@@ -28,7 +28,7 @@ REQUIRED_COLS = [
 
 # We load these once in main() so each Optuna trial is faster.
 TRAIN_LOADER = None
-TEST_LOADER = None
+VAL_LOADER = None
 NUM_USERS = None
 NUM_MOVIES = None
 DEVICE = None
@@ -49,22 +49,25 @@ def initialize_tuning_data():
     Loads and prepares data once for all trials.
     This avoids re-reading large CSVs inside every objective() call.
     """
-    global TRAIN_LOADER, TEST_LOADER, NUM_USERS, NUM_MOVIES, DEVICE
+    global TRAIN_LOADER, VAL_LOADER, NUM_USERS, NUM_MOVIES, DEVICE
 
     train_path = os.path.join(PROCESSED_DIR, "train_features.csv")
-    test_path = os.path.join(PROCESSED_DIR, "test_features.csv")
+    val_path = os.path.join(PROCESSED_DIR, "val_features.csv")
+    if not os.path.exists(val_path):
+        # Backward-compatible fallback for old 2-way split artifacts.
+        val_path = os.path.join(PROCESSED_DIR, "test_features.csv")
 
     train_df = pd.read_csv(train_path, usecols=REQUIRED_COLS, low_memory=False)
-    test_df = pd.read_csv(test_path, usecols=REQUIRED_COLS, low_memory=False)
+    val_df = pd.read_csv(val_path, usecols=REQUIRED_COLS, low_memory=False)
 
-    NUM_USERS = int(max(train_df["userId"].max(), test_df["userId"].max()))
-    NUM_MOVIES = int(max(train_df["movieId"].max(), test_df["movieId"].max()))
+    NUM_USERS = int(max(train_df["userId"].max(), val_df["userId"].max()))
+    NUM_MOVIES = int(max(train_df["movieId"].max(), val_df["movieId"].max()))
 
     TRAIN_LOADER = DataLoader(MovieLensDataset(train_df), batch_size=BATCH_SIZE, shuffle=True)
-    TEST_LOADER = DataLoader(MovieLensDataset(test_df), batch_size=BATCH_SIZE, shuffle=False)
+    VAL_LOADER = DataLoader(MovieLensDataset(val_df), batch_size=BATCH_SIZE, shuffle=False)
 
     DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    log_to_file(f"Data initialized once. Train rows: {len(train_df):,}, Test rows: {len(test_df):,}")
+    log_to_file(f"Data initialized once. Train rows: {len(train_df):,}, Val rows: {len(val_df):,}")
     log_to_file(f"Using device: {DEVICE}")
 
 class DynamicNCF(nn.Module):
@@ -99,7 +102,7 @@ class DynamicNCF(nn.Module):
 
 def objective(trial):
     """Optuna objective function. Suggests hyperparameters, trains, and returns validation RMSE."""
-    global TRAIN_LOADER, TEST_LOADER, NUM_USERS, NUM_MOVIES, DEVICE
+    global TRAIN_LOADER, VAL_LOADER, NUM_USERS, NUM_MOVIES, DEVICE
     
     # 1. Suggest Hyperparameters
     learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
@@ -131,12 +134,12 @@ def objective(trial):
     model.eval()
     running_val_loss = 0.0
     with torch.no_grad():
-        for users, movies, dense, ratings in TEST_LOADER:
+        for users, movies, dense, ratings in VAL_LOADER:
             users, movies, dense, ratings = users.to(DEVICE), movies.to(DEVICE), dense.to(DEVICE), ratings.to(DEVICE)
             loss = criterion(model(users, movies, dense), ratings)
             running_val_loss += loss.item() * users.size(0)
             
-    val_mse = running_val_loss / len(TEST_LOADER.dataset)
+    val_mse = running_val_loss / len(VAL_LOADER.dataset)
     val_rmse = np.sqrt(val_mse)
     
     return val_rmse

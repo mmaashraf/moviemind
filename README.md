@@ -47,6 +47,28 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
+### 0.1) Local LLM System Dependency (Ollama)
+
+`local-llm` mode requires Ollama as a local system service (not a pip package).
+
+Use the helper script:
+
+```bash
+bash scripts/setup_local_ollama.sh
+```
+
+Optional model override:
+
+```bash
+OLLAMA_MODEL=llama3.1:8b bash scripts/setup_local_ollama.sh
+```
+
+Local LLM smoke test (saves output to `evidence/phase8/`):
+
+```bash
+bash scripts/test_local_llm.sh
+```
+
 ### 1) Data Acquisition
 
 ```bash
@@ -171,13 +193,16 @@ streamlit run app/streamlit_app.py --server.port 8502
 
 UI pages:
 - Recommend
-- Explain
+- Predict
 - Model Inspector
+- Model Visualizers
+- Lifecycle Evidence
+- AI Concepts
 - System
 
 NLP runtime modes:
 - `Rule-only`
-- `Local LLM`
+- `Local LLM` (Ollama-backed with guarded fallback)
 - `API LLM` (guarded fallback unless explicitly configured)
 
 Expected phase artifacts:
@@ -194,6 +219,11 @@ Expected phase artifacts:
 - `evidence/phase7/`: API smoke/live checks and milestone log
 - `evidence/phase8/`: UI/NLP smoke checks and milestone log
 - `evidence/code_reviews/`: periodic review notes and findings
+
+## Focused Wikis (Phase 8+)
+
+- `WEBAPP_AGENT_WIKI.md`: web app + API layer overview
+- `LOCAL_LLM_WIKI.md`: local Ollama parsing pipeline and guardrails
 
 ## Milestone Update Protocol (Mandatory)
 

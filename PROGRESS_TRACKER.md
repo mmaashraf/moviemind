@@ -51,9 +51,10 @@
 - **Status:** **COMPLETED**
 
 ## Phase 8: Web UI & NLP Agent Deployment
-- [x] Build Streamlit web app with pages: Recommend, Explain, Model Inspector, System
+- [x] Build Streamlit web app with pages: Recommend, Model Inspector, Embedding Space, Model Visualizers, Lifecycle Evidence, AI Concepts, System
 - [x] Add runtime toggle in UI (`Rule-only`, `Local LLM`, `API LLM`)
 - [x] Wire UI flows to FastAPI endpoints and validate startup behavior
 - [x] Capture UI/NLP evidence under `evidence/phase8/`
 - [x] Create dedicated wiki `WEBAPP_AGENT_WIKI.md`
+- [x] Validate local Ollama path end-to-end (`parsed_by=local-llm-ollama`) and capture latency evidence
 - **Status:** **COMPLETED**
