@@ -58,3 +58,14 @@
 - [x] Create dedicated wiki `WEBAPP_AGENT_WIKI.md`
 - [x] Validate local Ollama path end-to-end (`parsed_by=local-llm-ollama`) and capture latency evidence
 - **Status:** **COMPLETED**
+
+## Phase 8x: Tool Agent Hardening, Streaming, and UX Reliability
+- [x] Add multi-step tool agent endpoint `POST /agent/query` with Ollama `/api/chat` tool calls
+- [x] Add streaming endpoint `POST /agent/query/stream` (SSE) for incremental assistant/tool updates
+- [x] Add `TOOL_AGENT_WIKI.md` with architecture, contracts, troubleshooting, and multi-turn prompt recipes
+- [x] Improve Streamlit Agent UX with collapsible trace panel, explicit run status (`running/done/failed`), and SSE fallback behavior
+- [x] Add genre alias helpers (`genre_any`/`genre_filter`) including `fiction` expansion and OR-filter over-fetch logic
+- [x] Add resilience guardrails: read-timeout retries (`MOVIEMIND_OLLAMA_READ_RETRIES`) and pseudo-tool JSON nudge retries (`MOVIEMIND_AGENT_PSEUDO_TOOL_RETRIES`)
+- [x] Add agent-side invalid user-id handling and API-level `404` for missing user resource (`GET /users/{user_id}/summary`)
+- [x] Expose diversity guidance in agent prompt and tool schema (`diversity_alpha` alignment with manual flow)
+- **Status:** **COMPLETED**

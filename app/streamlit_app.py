@@ -2,7 +2,7 @@ import os
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import joblib
 import matplotlib.pyplot as plt
@@ -30,7 +30,6 @@ st.set_page_config(page_title="MovieMind", page_icon="🎬", layout="wide")
 API_BASE_URL = os.environ.get("MOVIEMIND_API_URL", "http://127.0.0.1:8000")
 EVIDENCE_DIR = PROJECT_ROOT / "evidence"
 RUNTIME_OPTIONS = {
-    "Rule-only": "rule-only",
     "Local LLM": "local-llm",
     "API LLM": "api-llm",
 }
@@ -66,10 +65,11 @@ def api_get(path: str) -> Dict[str, Any]:
     return resp.json()
 
 
-def api_post(path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-    resp = requests.post(f"{API_BASE_URL}{path}", json=payload, timeout=60)
+def api_post(path: str, payload: Dict[str, Any], timeout_sec: int = 120) -> Tuple[Dict[str, Any], requests.Response]:
+    """POST helper returning JSON plus raw response (for latency headers)."""
+    resp = requests.post(f"{API_BASE_URL}{path}", json=payload, timeout=timeout_sec)
     resp.raise_for_status()
-    return resp.json()
+    return resp.json(), resp
 
 
 def safe_api_get(path: str) -> Dict[str, Any]:
@@ -79,11 +79,198 @@ def safe_api_get(path: str) -> Dict[str, Any]:
         return {"ok": False, "error": str(exc)}
 
 
-def safe_api_post(path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+def safe_api_post(path: str, payload: Dict[str, Any], timeout_sec: int = 120) -> Dict[str, Any]:
     try:
-        return {"ok": True, "data": api_post(path, payload)}
+        body, resp = api_post(path, payload, timeout_sec=timeout_sec)
+        latency_ms = resp.headers.get("X-Latency-Ms")
+        return {"ok": True, "data": body, "latency_ms": latency_ms, "status_code": resp.status_code}
+    except requests.HTTPError as exc:
+        detail = str(exc)
+        resp_obj = getattr(exc, "response", None)
+        if resp_obj is not None:
+            try:
+                payload_json = resp_obj.json()
+                if isinstance(payload_json, dict) and "detail" in payload_json:
+                    d = payload_json["detail"]
+                    detail = d if isinstance(d, str) else str(d)
+            except Exception:
+                pass
+        return {"ok": False, "error": detail}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
+
+
+def iter_agent_query_sse(payload: Dict[str, Any], timeout_sec: int):
+    """Yield decoded SSE JSON events from ``POST /agent/query/stream``."""
+    url = f"{API_BASE_URL}/agent/query/stream"
+    with requests.post(url, json=payload, timeout=timeout_sec, stream=True) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines(decode_unicode=True):
+            if not line:
+                continue
+            if not line.startswith("data: "):
+                continue
+            yield json.loads(line[6:])
+
+
+def _latency_hint(runtime_mode: str) -> str:
+    if runtime_mode == "local-llm":
+        return "Local LLM calls can take several seconds on first run or large models. If Ollama is down, you will see an error (no silent fallback)."
+    if runtime_mode == "api-llm":
+        return "API LLM mode may wait on network latency."
+    return ""
+
+
+def _available_model_ids(models: List[Dict[str, Any]]) -> set:
+    return {str(m.get("model_id")) for m in models if m.get("available")}
+
+
+def _resolve_model_for_recommend(
+    models: List[Dict[str, Any]],
+    *,
+    model_hint: Optional[str],
+    fallback_model_id: str,
+) -> Tuple[str, Optional[str]]:
+    """Prefer NLP model_hint when that artifact is registered and available; otherwise fall back."""
+    available = _available_model_ids(models)
+    hint = (model_hint or "").strip()
+    if hint and hint in available:
+        return hint, None
+    if hint and hint not in available:
+        return fallback_model_id, (
+            f"NLP model_hint `{hint}` is not available on this machine "
+            f"(see `/models`). Using the UI-selected model `{fallback_model_id}` instead."
+        )
+    return fallback_model_id, None
+
+
+def _render_nlp_parse_summary(data: Dict[str, Any], latency_ms: Optional[str]) -> None:
+    parsed_by = str(data.get("parsed_by", ""))
+    conf = data.get("confidence")
+    intent = data.get("intent")
+    model_hint = data.get("model_hint")
+    cols = st.columns(4)
+    cols[0].metric("Parser", parsed_by or "-")
+    cols[1].metric("Confidence", f"{float(conf):.2f}" if isinstance(conf, (int, float)) else "-")
+    cols[2].metric("Intent", str(intent or "-"))
+    cols[3].metric("API latency (server)", f"{latency_ms} ms" if latency_ms else "-")
+    if model_hint:
+        st.caption(f"Model hint from NLP: `{model_hint}`")
+    if "fallback" in parsed_by.lower():
+        st.warning(
+            "Parser used the guarded fallback path (e.g. API LLM not configured). "
+            "Local LLM mode no longer falls back silently—Ollama errors surface as API/UI errors."
+        )
+
+
+def _show_nlp_query_error(message: str) -> None:
+    """Surface `/nlp/query` failures (e.g. Ollama down) in a clear panel."""
+    with st.expander("NLP parse failed", expanded=True):
+        st.caption("Typical fix: start Ollama, pull the model, and check `MOVIEMIND_OLLAMA_MODEL` / `MOVIEMIND_OLLAMA_TIMEOUT_SEC`.")
+        st.error(message)
+
+
+def _tool_calls_for_display(msg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Normalize Ollama-style assistant `tool_calls` for UI (name + arguments dict)."""
+    raw = msg.get("tool_calls")
+    if not raw:
+        return []
+    out: List[Dict[str, Any]] = []
+    for tc in raw:
+        if not isinstance(tc, dict):
+            continue
+        fn = tc.get("function") or {}
+        name = fn.get("name") or tc.get("name")
+        args = fn.get("arguments")
+        if isinstance(args, str):
+            try:
+                args = json.loads(args)
+            except json.JSONDecodeError:
+                args = {}
+        if not isinstance(args, dict):
+            args = {}
+        if name:
+            out.append({"name": str(name), "arguments": args})
+    return out
+
+
+def _trace_for_thinking_display(full_trace: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Exclude the last assistant turn when it has no tool calls — that text is the same as
+    **final_message** and is shown under **Agent reply** to avoid duplication.
+    """
+    if not full_trace:
+        return []
+    last_ai: Optional[int] = None
+    for i in range(len(full_trace) - 1, -1, -1):
+        if "assistant_message" in full_trace[i]:
+            last_ai = i
+            break
+    if last_ai is None:
+        return full_trace
+    am = full_trace[last_ai].get("assistant_message") or {}
+    if _tool_calls_for_display(am):
+        return full_trace
+    if last_ai == 0:
+        return []
+    return full_trace[:last_ai]
+
+
+def _render_thinking_steps_only(thinking_trace: List[Dict[str, Any]]) -> None:
+    """Thought / Action / Observation steps (no wrapper)."""
+    if not thinking_trace:
+        return
+    n = len(thinking_trace)
+    for idx, entry in enumerate(thinking_trace):
+        turn = entry.get("turn", "")
+        if "assistant_message" in entry:
+            msg = entry.get("assistant_message") or {}
+            content = (msg.get("content") or "").strip()
+            tcalls = _tool_calls_for_display(msg)
+            st.markdown(f"**Step {turn}**")
+            if content:
+                st.markdown(content)
+            for tc in tcalls:
+                st.caption(f"Action → `{tc['name']}`")
+                st.json(tc.get("arguments") or {})
+        elif "tool" in entry:
+            tname = entry.get("tool", "")
+            preview = (entry.get("tool_output_preview") or "").strip()
+            st.markdown(f"**Observation** · `{tname}`")
+            display = preview if len(preview) <= 1200 else preview[:1200] + "\n…"
+            st.code(display or "{}", language="json")
+        if idx < n - 1:
+            st.divider()
+
+
+def _render_agent_trace_panel(
+    thinking_trace: List[Dict[str, Any]],
+    full_trace: Optional[List[Dict[str, Any]]],
+    *,
+    expanded: bool,
+    show_raw_json: bool,
+) -> None:
+    """
+    Collapsible **Agent trace**: optional thinking steps + nested raw JSON.
+    When only a single-turn reply exists, shows caption + raw JSON inside the outer expander.
+    """
+    has_steps = bool(thinking_trace)
+    has_raw = bool(full_trace) and show_raw_json
+    if not has_steps and not has_raw:
+        return
+    with st.expander("Agent trace — thinking, tools & observations", expanded=expanded):
+        if has_steps:
+            st.caption(
+                "Intermediate reasoning and tool rounds; the conversational answer is in **Agent reply** below."
+            )
+            _render_thinking_steps_only(thinking_trace)
+        elif has_raw:
+            st.caption("Single-turn reply: no intermediate tool steps; full turn record is in **Raw trace** below.")
+        if has_raw and full_trace is not None:
+            if has_steps:
+                st.divider()
+            with st.expander("Raw trace (JSON)", expanded=False):
+                st.json(full_trace)
 
 
 @st.cache_data(show_spinner=False)
@@ -315,10 +502,37 @@ def recommend_page(models: List[Dict[str, Any]]) -> None:
         st.info("No models available from API.")
         return
 
-    model_map = {f"{m['display_name']} ({m['model_id']})": m["model_id"] for m in models}
+    models_ready = [m for m in models if m.get("available")]
+    skipped = len(models) - len(models_ready)
+    if skipped:
+        st.caption(
+            f"{skipped} model(s) are omitted from the Model list because artifacts are missing on disk "
+            f"(see **Model Inspector** for artifact paths)."
+        )
+    if not models_ready:
+        st.warning(
+            "No models have recommendation artifacts available. Train or copy checkpoints into `models/` "
+            "so the API can load them, then refresh this page."
+        )
+        return
+
+    model_map = {f"{m['display_name']} ({m['model_id']})": m["model_id"] for m in models_ready}
     id_range = _user_id_range()
 
-    cols = st.columns(4)
+    mode = st.radio(
+        "Recommendation mode",
+        ["Manual", "Agent (NLP)"],
+        horizontal=True,
+        index=0,
+        help=(
+            "Manual: set model, user, and Top N, then **Get Recommendations**. "
+            "Agent (NLP): describe what you want, choose NLP runtime, then **Parse Query (NLP)** "
+            "(optional auto-fetch). Agent mode does not use the separate Get Recommendations button."
+        ),
+    )
+    is_agent = mode == "Agent (NLP)"
+
+    cols = st.columns(4 if is_agent else 3)
     selected_label = cols[0].selectbox("Model", list(model_map.keys()))
     user_id = cols[1].number_input(
         "User ID",
@@ -328,7 +542,8 @@ def recommend_page(models: List[Dict[str, Any]]) -> None:
         step=1,
     )
     top_n = cols[2].slider("Top N", min_value=1, max_value=50, value=10)
-    runtime_label = cols[3].selectbox("NLP Runtime", list(RUNTIME_OPTIONS.keys()), index=1)
+    if is_agent:
+        runtime_label = cols[3].selectbox("NLP Runtime", list(RUNTIME_OPTIONS.keys()), index=0)
     with st.expander("Advanced Recommendation Controls", expanded=False):
         diversity_alpha = st.slider(
             "Diversity",
@@ -343,6 +558,8 @@ def recommend_page(models: List[Dict[str, Any]]) -> None:
         )
         show_diversity_debug = st.checkbox("Show Diversity Math Debug", value=False)
     st.caption(f"Available userId range in training data: `{id_range['min_user_id']} - {id_range['max_user_id']}`")
+    if is_agent:
+        st.caption(_latency_hint(RUNTIME_OPTIONS[runtime_label]))
     with st.expander("New User & Field Legends", expanded=False):
         st.markdown(
             """
@@ -361,8 +578,6 @@ Planned optional extension for new users:
             [{"code": code, "occupation": label} for code, label in OCCUPATION_LEGEND.items()],
             use_container_width=True,
         )
-
-    query = st.text_input("Optional natural-language request", placeholder="e.g., top 5 action movies for user 120 with tuned model")
 
     # Show quick user context from training data to guide interpretation.
     user_summary = safe_api_get(f"/users/{int(user_id)}/summary")
@@ -383,88 +598,259 @@ Planned optional extension for new users:
         ).set_index("genre")
         st.bar_chart(genre_df)
 
-    st.markdown("### Actions")
-    rec_btn, nlp_btn = st.columns([1.4, 1])
-    with rec_btn:
-        if st.button("Get Recommendations", type="primary", use_container_width=True):
-            payload = {
-                "model_id": model_map[selected_label],
-                "user_id": int(user_id),
-                "top_n": int(top_n),
-                "diversity_alpha": float(diversity_alpha),
-            }
-            result = safe_api_post("/recommend", payload)
-            if not result["ok"]:
-                st.error(result["error"])
-            else:
-                items = result["data"]["recommendations"]
-                st.session_state["last_recommendations"] = items
-                st.success(f"Returned {len(items)} recommendations.")
-                display_rows = [
-                    {
-                        "movie_id": row.get("movie_id"),
-                        "title": row.get("title"),
-                        "genres": row.get("genres"),
-                        "predicted_rating": row.get("predicted_rating"),
-                        "reason": row.get("reason"),
-                    }
-                    for row in items
-                ]
-                st.dataframe(display_rows, use_container_width=True)
-                if show_diversity_debug and items:
-                    st.markdown("**Diversity Debug (score adjustment per selected item)**")
-                    debug_rows = []
-                    for row in items:
-                        raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
-                        penalty = float(row.get("overlap_penalty") or 0.0)
-                        adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
-                        overlap_genres = row.get("overlap_genres") or []
-                        movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
-                        overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
-                        debug_rows.append(
-                            {
-                                "movie_id": row.get("movie_id"),
-                                "title": row.get("title"),
-                                "predicted_rating_raw": round(raw, 4),
-                                "diversity_alpha": round(float(diversity_alpha), 4),
-                                "overlap_ratio": round(float(overlap_ratio), 4),
-                                "overlap_count": len(overlap_genres),
-                                "movie_genre_count": len(movie_genres),
-                                "overlap_penalty": round(penalty, 4),
-                                "adjusted_score": round(adjusted, 4),
-                                "calc_check": round(raw - penalty, 4),
-                                "overlap_genres": overlap_genres,
-                            }
-                        )
-                    st.dataframe(debug_rows, use_container_width=True)
+    query = ""
+    auto_recommend = True
+    use_tool_agent = False
+    agent_max_turns = 8
+    if is_agent:
+        query = st.text_input(
+            "Natural-language request",
+            placeholder="e.g., top 5 action movies for user 120 with tuned model",
+        )
+        with st.expander("How NLP works in this UI", expanded=False):
+            st.markdown(
+                """
+- Streamlit sends your text to FastAPI `POST /nlp/query`.
+- **Local LLM** asks your local Ollama model for strict JSON, then the API validates it. If Ollama fails, the API returns an error (no rule-only fallback).
+- **API LLM** is optional and may fall back unless configured.
+- Parsed **filters** can include `user_id`, `top_n`, and `genre` (and a **model_hint**). The follow-up `POST /recommend` call currently uses **model_id**, **user_id**, **top_n**, and **diversity** only—**genre in the parse is not yet applied** to candidate selection (see backend `RecommendRequest`).
 
-    with nlp_btn:
-        if st.button("Parse Query (NLP)", use_container_width=True) and query.strip():
-            payload = {"query": query, "runtime_mode": RUNTIME_OPTIONS[runtime_label]}
-            result = safe_api_post("/nlp/query", payload)
-            if not result["ok"]:
-                st.error(result["error"])
-            else:
-                data = result["data"]
-                st.write("Parsed intent")
-                st.json(data)
-                parsed_model = data.get("model_hint") or model_map[selected_label]
-                parsed_user = int(data.get("filters", {}).get("user_id", user_id))
-                parsed_top_n = int(data.get("filters", {}).get("top_n", top_n))
-                rec_result = safe_api_post(
-                    "/recommend",
-                    {
-                        "model_id": parsed_model,
-                        "user_id": parsed_user,
-                        "top_n": parsed_top_n,
-                        "diversity_alpha": float(diversity_alpha),
-                    },
+Helpful env vars for Local LLM:
+- `MOVIEMIND_OLLAMA_MODEL`
+- `MOVIEMIND_OLLAMA_TIMEOUT_SEC`
+"""
+            )
+        use_tool_agent = st.checkbox(
+            "Multi-step tool agent (Ollama)",
+            value=False,
+            help=(
+                "Calls **POST /agent/query**: the model may invoke tools (list models, user summary, "
+                "recommendations + optional genre filter). Good foundation for onboarding flows. "
+                "Requires Ollama with tool calling; can take longer than quick NLP parse."
+            ),
+        )
+        agent_max_turns = 8
+        stream_agent_sse = True
+        if use_tool_agent:
+            agent_max_turns = int(
+                st.slider("Agent max turns", min_value=4, max_value=16, value=8, help="Caps LLM↔tool iterations.")
+            )
+            stream_agent_sse = st.checkbox(
+                "Stream agent steps (SSE)",
+                value=True,
+                help=(
+                    "Updates **Thinking** after each assistant/tool step via **POST /agent/query/stream**. "
+                    "Turn off to wait for one JSON response (**POST /agent/query**) if something buffers SSE."
+                ),
+            )
+            st.caption(
+                "**Tool agent** always uses the local Ollama service for `/agent/query` (independent of **NLP Runtime** above, which only applies to quick **Parse Query**). "
+                "The **Diversity** slider applies to **Manual** `Get Recommendations` only; for the tool agent, mention variety in your request (e.g. “diverse genres”) so the model may set **`diversity_alpha`** on `get_recommendations` — same field as the API."
+            )
+        auto_recommend = True
+        if not use_tool_agent:
+            auto_recommend = st.checkbox(
+                "After parsing, automatically fetch recommendations",
+                value=True,
+                help="If off, only the parsed summary is shown (faster demo when you only want intent extraction).",
+            )
+
+    st.markdown("### Actions")
+    run_manual_recommend = False
+    run_nlp_parse = False
+    if is_agent:
+        _agent_btn_label = "Run tool agent" if use_tool_agent else "Parse Query (NLP)"
+        run_nlp_parse = st.button(_agent_btn_label, type="primary", use_container_width=True)
+    else:
+        run_manual_recommend = st.button("Get Recommendations", type="primary", use_container_width=True)
+
+    if run_manual_recommend:
+        payload = {
+            "model_id": model_map[selected_label],
+            "user_id": int(user_id),
+            "top_n": int(top_n),
+            "diversity_alpha": float(diversity_alpha),
+        }
+        result = safe_api_post("/recommend", payload)
+        if not result["ok"]:
+            st.error(result["error"])
+        else:
+            items = result["data"]["recommendations"]
+            st.session_state["last_recommendations"] = items
+            st.success(f"Returned {len(items)} recommendations.")
+            display_rows = [
+                {
+                    "movie_id": row.get("movie_id"),
+                    "title": row.get("title"),
+                    "genres": row.get("genres"),
+                    "predicted_rating": row.get("predicted_rating"),
+                    "reason": row.get("reason"),
+                }
+                for row in items
+            ]
+            st.dataframe(display_rows, use_container_width=True)
+            if show_diversity_debug and items:
+                st.markdown("**Diversity Debug (score adjustment per selected item)**")
+                debug_rows = []
+                for row in items:
+                    raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
+                    penalty = float(row.get("overlap_penalty") or 0.0)
+                    adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
+                    overlap_genres = row.get("overlap_genres") or []
+                    movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
+                    overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
+                    debug_rows.append(
+                        {
+                            "movie_id": row.get("movie_id"),
+                            "title": row.get("title"),
+                            "predicted_rating_raw": round(raw, 4),
+                            "diversity_alpha": round(float(diversity_alpha), 4),
+                            "overlap_ratio": round(float(overlap_ratio), 4),
+                            "overlap_count": len(overlap_genres),
+                            "movie_genre_count": len(movie_genres),
+                            "overlap_penalty": round(penalty, 4),
+                            "adjusted_score": round(adjusted, 4),
+                            "calc_check": round(raw - penalty, 4),
+                            "overlap_genres": overlap_genres,
+                        }
+                    )
+                st.dataframe(debug_rows, use_container_width=True)
+
+    elif not is_agent and st.session_state.get("last_recommendations"):
+        st.caption(
+            "Showing **previous** recommendations (Streamlit reruns on every control change). "
+            "Click **Get Recommendations** again to refresh for the current settings."
+        )
+        items_prev = st.session_state["last_recommendations"]
+        display_rows_prev = [
+            {
+                "movie_id": row.get("movie_id"),
+                "title": row.get("title"),
+                "genres": row.get("genres"),
+                "predicted_rating": row.get("predicted_rating"),
+                "reason": row.get("reason"),
+            }
+            for row in items_prev
+        ]
+        st.dataframe(display_rows_prev, use_container_width=True)
+
+    if is_agent and run_nlp_parse:
+        if not query.strip():
+            st.warning("Enter a natural-language request above, then run the agent or parser.")
+        elif use_tool_agent:
+            agent_timeout = max(300, int(agent_max_turns) * 90)
+            agent_payload = {"query": query.strip(), "max_turns": int(agent_max_turns)}
+            adata: Optional[Dict[str, Any]] = None
+            agent_result: Optional[Dict[str, Any]] = None
+            latency_ms_out: Optional[str] = None
+            status_ph = st.empty()
+            status_ph.info("Agent status: running...")
+
+            if stream_agent_sse:
+                thinking_ph = st.empty()
+                thinking_entries: List[Dict[str, Any]] = []
+                stream_failed = False
+                sse_api_error = False
+                try:
+                    for ev in iter_agent_query_sse(agent_payload, timeout_sec=agent_timeout):
+                        et = ev.get("event")
+                        if et == "error":
+                            sse_api_error = True
+                            status_ph.error("Agent status: failed (SSE error)")
+                            _show_nlp_query_error(str(ev.get("detail") or "stream error"))
+                            break
+                        if et == "assistant":
+                            msg = ev.get("assistant_message") or {}
+                            if _tool_calls_for_display(msg):
+                                thinking_entries.append({"turn": ev.get("turn"), "assistant_message": msg})
+                                with thinking_ph.container():
+                                    _render_agent_trace_panel(
+                                        thinking_entries,
+                                        None,
+                                        expanded=True,
+                                        show_raw_json=False,
+                                    )
+                        elif et == "tool":
+                            thinking_entries.append(
+                                {
+                                    "turn": ev.get("turn"),
+                                    "tool": ev.get("tool"),
+                                    "tool_output_preview": ev.get("tool_output_preview") or "",
+                                }
+                            )
+                            with thinking_ph.container():
+                                _render_agent_trace_panel(
+                                    thinking_entries,
+                                    None,
+                                    expanded=True,
+                                    show_raw_json=False,
+                                )
+                        elif et == "done":
+                            adata = {k: v for k, v in ev.items() if k != "event"}
+                            status_ph.success("Agent status: done")
+                            break
+                except Exception as exc:  # noqa: BLE001
+                    stream_failed = True
+                    status_ph.warning("Agent status: stream failed, retrying one-shot call...")
+                    st.warning(f"SSE stream failed ({exc}); falling back to **POST /agent/query**.")
+                    with st.spinner("Running multi-step tool agent (POST /agent/query)..."):
+                        agent_result = safe_api_post("/agent/query", agent_payload, timeout_sec=agent_timeout)
+
+                if (
+                    not sse_api_error
+                    and not stream_failed
+                    and adata is None
+                    and agent_result is None
+                ):
+                    status_ph.warning("Agent status: ended without result")
+                    st.warning("Stream ended without a result.")
+                elif stream_failed and agent_result is None:
+                    agent_result = safe_api_post("/agent/query", agent_payload, timeout_sec=agent_timeout)
+
+            if not stream_agent_sse:
+                with st.spinner("Running multi-step tool agent (POST /agent/query)..."):
+                    agent_result = safe_api_post("/agent/query", agent_payload, timeout_sec=agent_timeout)
+
+            if agent_result is not None:
+                if not agent_result["ok"]:
+                    status_ph.error("Agent status: failed")
+                    _show_nlp_query_error(str(agent_result["error"]))
+                else:
+                    status_ph.success("Agent status: done")
+                    adata = agent_result["data"]
+                    latency_ms_out = agent_result.get("latency_ms")
+
+            if adata is not None:
+                full_trace = adata.get("trace") or []
+                thinking_only = _trace_for_thinking_display(full_trace)
+                if stream_agent_sse:
+                    with thinking_ph.container():
+                        _render_agent_trace_panel(
+                            thinking_only,
+                            full_trace,
+                            expanded=False,
+                            show_raw_json=True,
+                        )
+                else:
+                    _render_agent_trace_panel(
+                        thinking_only,
+                        full_trace,
+                        expanded=False,
+                        show_raw_json=True,
+                    )
+
+                st.markdown("#### Agent reply")
+                st.markdown(adata.get("final_message") or "")
+                if adata.get("error"):
+                    st.warning(adata["error"])
+                st.caption(
+                    f"Turns used: {adata.get('turns_used', 0)} · Ollama model: `{adata.get('model') or '-'}` "
+                    f"· Server latency header: {latency_ms_out or '-'} ms"
                 )
-                if rec_result["ok"]:
-                    st.write("Recommendations from parsed intent")
-                    parsed_items = rec_result["data"]["recommendations"]
-                    st.session_state["last_recommendations"] = parsed_items
-                    parsed_display = [
+                agent_recs = adata.get("recommendations") or []
+                if agent_recs:
+                    st.session_state["last_recommendations"] = agent_recs
+                    agent_display = [
                         {
                             "movie_id": row.get("movie_id"),
                             "title": row.get("title"),
@@ -472,37 +858,100 @@ Planned optional extension for new users:
                             "predicted_rating": row.get("predicted_rating"),
                             "reason": row.get("reason"),
                         }
-                        for row in parsed_items
+                        for row in agent_recs
                     ]
-                    st.dataframe(parsed_display, use_container_width=True)
-                    if show_diversity_debug and parsed_items:
-                        st.markdown("**Diversity Debug (score adjustment per selected item)**")
-                        debug_rows = []
-                        for row in parsed_items:
-                            raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
-                            penalty = float(row.get("overlap_penalty") or 0.0)
-                            adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
-                            overlap_genres = row.get("overlap_genres") or []
-                            movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
-                            overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
-                            debug_rows.append(
-                                {
-                                    "movie_id": row.get("movie_id"),
-                                    "title": row.get("title"),
-                                    "predicted_rating_raw": round(raw, 4),
-                                    "diversity_alpha": round(float(diversity_alpha), 4),
-                                    "overlap_ratio": round(float(overlap_ratio), 4),
-                                    "overlap_count": len(overlap_genres),
-                                    "movie_genre_count": len(movie_genres),
-                                    "overlap_penalty": round(penalty, 4),
-                                    "adjusted_score": round(adjusted, 4),
-                                    "calc_check": round(raw - penalty, 4),
-                                    "overlap_genres": overlap_genres,
-                                }
-                            )
-                        st.dataframe(debug_rows, use_container_width=True)
+                    st.dataframe(agent_display, use_container_width=True)
+        else:
+            payload = {"query": query, "runtime_mode": RUNTIME_OPTIONS[runtime_label]}
+            nlp_timeout = 180 if RUNTIME_OPTIONS[runtime_label] == "local-llm" else 120
+            with st.spinner("Calling /nlp/query..."):
+                result = safe_api_post("/nlp/query", payload, timeout_sec=nlp_timeout)
+            if not result["ok"]:
+                _show_nlp_query_error(str(result["error"]))
+            else:
+                data = result["data"]
+                st.markdown("#### Parsed intent")
+                _render_nlp_parse_summary(data, result.get("latency_ms"))
+                show_raw = st.checkbox("Show raw JSON", value=False, key="nlp_show_raw")
+                if show_raw:
+                    st.json(data)
+                filters_parsed = data.get("filters") or {}
+                if filters_parsed.get("genre"):
+                    st.info(
+                        "Parsed **genre** is shown in JSON above but **not yet enforced** by `/recommend` "
+                        "(recommend scores all unseen movies; genre filtering needs a backend change)."
+                    )
+                parsed_model, model_resolve_msg = _resolve_model_for_recommend(
+                    models,
+                    model_hint=data.get("model_hint"),
+                    fallback_model_id=model_map[selected_label],
+                )
+                if model_resolve_msg:
+                    st.warning(model_resolve_msg)
+                parsed_user = int(filters_parsed.get("user_id", user_id))
+                parsed_top_n = int(filters_parsed.get("top_n", top_n))
+                if not auto_recommend:
+                    st.info(
+                        "Auto-recommend is off. Enable **After parsing, automatically fetch recommendations** "
+                        "above, or switch to **Manual** for **Get Recommendations**."
+                    )
                 else:
-                    st.error(rec_result["error"])
+                    with st.spinner("Fetching recommendations from parsed intent..."):
+                        rec_result = safe_api_post(
+                            "/recommend",
+                            {
+                                "model_id": parsed_model,
+                                "user_id": parsed_user,
+                                "top_n": parsed_top_n,
+                                "diversity_alpha": float(diversity_alpha),
+                            },
+                        )
+                    if rec_result["ok"]:
+                        st.write("Recommendations from parsed intent")
+                        rec_lat = rec_result.get("latency_ms")
+                        if rec_lat:
+                            st.caption(f"Recommend request server latency: {rec_lat} ms")
+                        parsed_items = rec_result["data"]["recommendations"]
+                        st.session_state["last_recommendations"] = parsed_items
+                        parsed_display = [
+                            {
+                                "movie_id": row.get("movie_id"),
+                                "title": row.get("title"),
+                                "genres": row.get("genres"),
+                                "predicted_rating": row.get("predicted_rating"),
+                                "reason": row.get("reason"),
+                            }
+                            for row in parsed_items
+                        ]
+                        st.dataframe(parsed_display, use_container_width=True)
+                        if show_diversity_debug and parsed_items:
+                            st.markdown("**Diversity Debug (score adjustment per selected item)**")
+                            debug_rows = []
+                            for row in parsed_items:
+                                raw = float(row.get("predicted_rating_raw") or row.get("predicted_rating") or 0.0)
+                                penalty = float(row.get("overlap_penalty") or 0.0)
+                                adjusted = float(row.get("adjusted_score") or row.get("predicted_rating") or 0.0)
+                                overlap_genres = row.get("overlap_genres") or []
+                                movie_genres = [g.strip() for g in str(row.get("genres", "")).split("|") if g.strip()]
+                                overlap_ratio = (penalty / diversity_alpha) if diversity_alpha > 0 else 0.0
+                                debug_rows.append(
+                                    {
+                                        "movie_id": row.get("movie_id"),
+                                        "title": row.get("title"),
+                                        "predicted_rating_raw": round(raw, 4),
+                                        "diversity_alpha": round(float(diversity_alpha), 4),
+                                        "overlap_ratio": round(float(overlap_ratio), 4),
+                                        "overlap_count": len(overlap_genres),
+                                        "movie_genre_count": len(movie_genres),
+                                        "overlap_penalty": round(penalty, 4),
+                                        "adjusted_score": round(adjusted, 4),
+                                        "calc_check": round(raw - penalty, 4),
+                                        "overlap_genres": overlap_genres,
+                                    }
+                                )
+                            st.dataframe(debug_rows, use_container_width=True)
+                    else:
+                        st.error(rec_result["error"])
 
     with st.expander("Taste Map (Game-Style Radar)", expanded=False):
         st.caption(

@@ -1,16 +1,21 @@
+import json
 import logging
 import time
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from .model_registry import ModelRegistry
-from .nlp import parse_query
+from .agent_loop import iter_tool_agent_events, run_tool_agent
+from .nlp import LocalLLMUnavailableError, parse_query
 from .schemas import (
     HealthResponse,
     ModelInfoResponse,
     ModelsResponse,
+    AgentQueryRequest,
+    AgentQueryResponse,
     NLPQueryRequest,
     NLPQueryResponse,
     PredictRequest,
@@ -97,7 +102,22 @@ def model_info(model_id: str) -> ModelInfoResponse:
 def user_summary(user_id: int) -> UserSummaryResponse:
     # Returns user profile and training interaction summary for UI context.
     logger.info("user_summary called user_id=%s", user_id)
-    return UserSummaryResponse(**registry.user_summary(user_id))
+    min_uid = int(getattr(registry, "min_user_id", 1))
+    max_uid = int(getattr(registry, "max_user_id", 1))
+    if user_id < min_uid or user_id > max_uid:
+        raise HTTPException(
+            status_code=404,
+            detail=f"user_id {user_id} not found (valid range: {min_uid}..{max_uid})",
+        )
+    summary = registry.user_summary(user_id)
+    # Defensive check in case preprocessing/state changes and range alone is insufficient.
+    if (
+        not bool(summary.get("found_in_training"))
+        and int(summary.get("rating_count_train") or 0) == 0
+        and summary.get("age") is None
+    ):
+        raise HTTPException(status_code=404, detail=f"user_id {user_id} not found")
+    return UserSummaryResponse(**summary)
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -157,7 +177,12 @@ def nlp_query(payload: NLPQueryRequest) -> NLPQueryResponse:
         payload.runtime_mode,
         payload.query[:80].replace("\n", " "),
     )
-    mode, parsed = parse_query(payload.query, payload.runtime_mode)
+    try:
+        mode, parsed = parse_query(payload.query, payload.runtime_mode)
+    except LocalLLMUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=exc.message) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     logger.info(
         "nlp_query parsed runtime_mode=%s parsed_by=%s confidence=%.2f intent=%s model_hint=%s",
         mode,
@@ -167,4 +192,61 @@ def nlp_query(payload: NLPQueryRequest) -> NLPQueryResponse:
         parsed.get("model_hint"),
     )
     return NLPQueryResponse(runtime_mode=mode, **parsed)
+
+
+@app.post("/agent/query", response_model=AgentQueryResponse)
+def agent_query(payload: AgentQueryRequest) -> AgentQueryResponse:
+    """
+    Multi-step tool agent (Ollama /api/chat): uses tools list_available_models,
+    get_user_summary, get_recommendations (optional genre_filter).
+    Suitable foundation for richer flows (onboarding) later.
+    """
+    logger.info(
+        "agent_query called query_preview=%s max_turns=%s",
+        payload.query[:80].replace("\n", " "),
+        payload.max_turns,
+    )
+    try:
+        result = run_tool_agent(registry, payload.query, max_turns=payload.max_turns)
+    except LocalLLMUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc.message)) from exc
+    return AgentQueryResponse(
+        final_message=result.get("final_message", ""),
+        recommendations=result.get("recommendations"),
+        trace=result.get("trace") or [],
+        turns_used=int(result.get("turns_used") or 0),
+        model=result.get("model"),
+        error=result.get("error"),
+    )
+
+
+@app.post("/agent/query/stream")
+def agent_query_stream(payload: AgentQueryRequest) -> StreamingResponse:
+    """
+    Server-Sent Events stream of tool-agent steps (assistant / tool) plus a terminal ``done`` event
+    with the same fields as ``POST /agent/query``.
+    """
+
+    def sse_generator():
+        logger.info(
+            "agent_query_stream called query_preview=%s max_turns=%s",
+            payload.query[:80].replace("\n", " "),
+            payload.max_turns,
+        )
+        try:
+            for ev in iter_tool_agent_events(registry, payload.query, max_turns=payload.max_turns):
+                yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+        except LocalLLMUnavailableError as exc:
+            err = {"event": "error", "detail": exc.message}
+            yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 

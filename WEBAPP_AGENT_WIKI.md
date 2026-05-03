@@ -70,6 +70,14 @@ High-level runtime flow:
   - `confidence`
   - parser metadata and explanation
 
+### `POST /agent/query` (multi-step tool agent)
+- Purpose: Ollama **`/api/chat`** loop with **tools** (`list_available_models`, `get_user_summary`, `get_recommendations` + optional genre filter). Separate from quick `/nlp/query`.
+- Full technical detail: **`TOOL_AGENT_WIKI.md`**.
+
+### `POST /agent/query/stream` (tool agent, SSE)
+- Purpose: Same body as **`/agent/query`**; response **`text/event-stream`** with JSON events (`assistant`, `tool`, `done`, optional `error`) so UIs can update **between** Ollama round-trips.
+- Ollama itself is still called with **`stream: false`** per round for reliable **`tool_calls`**; SSE is FastAPI **`StreamingResponse`** around **`iter_tool_agent_events`** — see **`TOOL_AGENT_WIKI.md`** § streaming.
+
 ## 3) Runtime Modes and Usage Guidance
 
 ### `Rule-only`
