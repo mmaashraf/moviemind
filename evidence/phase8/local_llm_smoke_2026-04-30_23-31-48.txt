@@ -1,0 +1,16 @@
+=== MovieMind Local LLM Smoke Test ===
+timestamp: 2026-04-30T18:01:48Z
+api_url: http://127.0.0.1:8000
+
+1) Health check
+{"status":"ok","service":"moviemind-api"}
+timing: curl_total_sec=0.001665, api_x_latency_ms=0.58
+
+2) Local LLM parse (should be local-llm-ollama if Ollama is up, else fallback)
+{"runtime_mode":"local-llm","parsed_by":"local-llm-ollama","confidence":0.82,"intent":"recommend","filters":{"user_id":10,"top_n":5,"genre":"action"},"model_hint":"ncf_tuned","explanation":"Parsed via local Ollama model `llama3.1:8b` with schema guardrails."}
+timing: curl_total_sec=3.198751, api_x_latency_ms=3195.36
+
+3) Rule-only parse (control check)
+{"runtime_mode":"rule-only","parsed_by":"rule-parser","confidence":0.9,"intent":"recommend","filters":{"user_id":10,"top_n":5,"genre":"action"},"model_hint":"ncf_tuned","explanation":"Parsed using deterministic rules."}
+timing: curl_total_sec=0.003033, api_x_latency_ms=1.56
+

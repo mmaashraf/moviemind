@@ -364,7 +364,13 @@ class ModelRegistry:
 
         return pd.DataFrame(selected_rows)
 
-    def recommend(self, model_id: str, user_id: int, top_n: int, diversity_alpha: float = 0.0) -> List[Dict[str, Any]]:
+    def recommend(
+        self,
+        model_id: str,
+        user_id: int,
+        top_n: int,
+        diversity_alpha: float = 0.0,
+    ) -> List[Dict[str, Any]]:
         """Returns top-N unseen movies for user by batched model scoring with optional diversity rerank."""
         runtime = self.get_model(model_id)
         if not runtime.available:

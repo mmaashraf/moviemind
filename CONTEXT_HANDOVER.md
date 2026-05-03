@@ -1,6 +1,6 @@
 # Context Handover: Movie Recommendation System Capstone
 
-**Last Updated:** Phase 8 (API + UI + NLP Baseline Delivered)
+**Last Updated:** Phase 8 Finalized (API + UI + Local LLM validated)
 
 ## Project Overview
 Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommendation System following the AI Development Life Cycle (AIDLC). Full plan is in `AI_LIFECYCLE_PLAN.md`. Progress is tracked in `PROGRESS_TRACKER.md`.
@@ -43,12 +43,20 @@ Capstone Project for an AI/ML/DL course. Building an end-to-end Movie Recommenda
     *   Added FastAPI service in `src/api/` with `/health`, `/models`, `/models/{model_id}/info`, `/predict`, `/recommend`, `/nlp/query`.
     *   Added unified model registry to serve Baseline, ML, DL, Tuned DL from one interface.
     *   Saved smoke and live API evidence under `evidence/phase7/`.
-*   **Phase 8 (Web UI + NLP Layer):** COMPLETED (initial production baseline).
-    *   Added Streamlit app in `app/streamlit_app.py` with pages: Recommend, Explain, Model Inspector, System.
-    *   Added runtime mode toggle (`Rule-only`, `Local LLM`, `API LLM`) and guardrailed parser contract.
-    *   Added WebApp/Agent documentation in `WEBAPP_AGENT_WIKI.md`.
-    *   Saved UI/NLP evidence under `evidence/phase8/`.
-*   **Next Step:** Phase 8.x enhancements (advanced model inspector: side-by-side comparisons, richer diagnostics download, stronger local/API LLM adapters).
+*   **Phase 8 (Web UI + NLP Layer):** COMPLETED and validated with local model.
+    *   Streamlit app in `app/streamlit_app.py` includes: Recommend, Model Inspector, Embedding Space, Model Visualizers, Lifecycle Evidence, AI Concepts, System.
+    *   Runtime mode toggle implemented (`Rule-only`, `Local LLM`, `API LLM`) with schema guardrails.
+    *   Local LLM setup and smoke scripts added:
+        * `scripts/setup_local_ollama.sh`
+        * `scripts/test_local_llm.sh`
+    *   Local LLM evidence captured with latency and parser identity:
+        * `evidence/phase8/local_llm_smoke_2026-04-30_23-31-48.txt`
+        * confirms `parsed_by=local-llm-ollama`.
+    *   Documentation added/updated:
+        * `WEBAPP_AGENT_WIKI.md`
+        * `LOCAL_LLM_WIKI.md`
+        * `README.md`
+*   **Next Step:** Phase 8.x targeted enhancement (LLM-assisted onboarding parse for new users, with deterministic backend routing).
 
 ## Key EDA Insights That Drive Design
 *   95% sparsity means simple KNN fails. Must use embeddings/matrix factorization.
