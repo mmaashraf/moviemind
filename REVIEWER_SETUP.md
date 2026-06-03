@@ -76,6 +76,8 @@ ls evidence/phase6 evidence/phase9_split_eval
 
 Full diagram and script reference: [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md).
 
+**Release:** [v1.0-artifacts](https://github.com/mmaashraf/moviemind/releases/tag/v1.0-artifacts) — asset must be **`moviemind-artifacts.tar.gz`** (published, not draft).
+
 Git cannot hold `data/` and `models/` at full size without a separate **release tarball**. After you publish one:
 
 **Author (once):** `bash scripts/pack_review_artifacts.sh` → upload `moviemind-artifacts.tar.gz` to a GitHub Release.
@@ -86,7 +88,7 @@ Git cannot hold `data/` and `models/` at full size without a separate **release 
 git clone https://github.com/mmaashraf/moviemind.git && cd moviemind
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-export MOVIEMIND_ARTIFACTS_URL="https://github.com/<org>/moviemind/releases/download/<tag>/moviemind-artifacts.tar.gz"
+export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
 bash scripts/download_review_artifacts.sh
 bash scripts/restart_moviemind.sh
 ```

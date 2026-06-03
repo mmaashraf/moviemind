@@ -1,5 +1,6 @@
 data/
 models/
+moviemind-artifacts.tar.gz
 .env
 __pycache__/
 *.pt

@@ -103,9 +103,9 @@ Upload `moviemind-artifacts.tar.gz` to a **GitHub Release** and note the direct 
 **Run from:** `moviemind/`
 
 ```bash
-export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/<tag>/moviemind-artifacts.tar.gz"
+export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
 bash scripts/download_review_artifacts.sh
-# or: bash scripts/download_review_artifacts.sh "$MOVIEMIND_ARTIFACTS_URL"
+# Release page: https://github.com/mmaashraf/moviemind/releases/tag/v1.0-artifacts
 ```
 
 ### Behavior
@@ -169,7 +169,7 @@ If `data/` or `models/` are missing, servers may start but **recommendations wil
 git clone https://github.com/mmaashraf/moviemind.git && cd moviemind
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/<tag>/moviemind-artifacts.tar.gz"
+export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
 bash scripts/download_review_artifacts.sh
 bash scripts/restart_moviemind.sh
 ```
