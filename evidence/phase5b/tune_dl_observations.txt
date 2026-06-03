@@ -14,3 +14,21 @@ Best hyperparameters:
     n_units_l1: 192
 Total tuning runtime: 15.98 minutes
 Saved artifacts: models/best_dl_params.txt, models/tune_dl_log.txt, evidence/phase5b/tune_dl_observations.txt
+--- Starting Optuna Hyperparameter Tuning ---
+Running 50 trials (each trial trains for 3 epochs)
+Data initialized once. Train rows: 700,146, Val rows: 100,020
+Using device: mps
+
+=== TUNING COMPLETE ===
+Best trial RMSE: 1.0051
+Best hyperparameters:
+    learning_rate: 0.009729453187052975
+    embedding_dim: 64
+    dropout_rate: 0.10392078128419624
+    n_layers: 4
+    n_units_l0: 96
+    n_units_l1: 32
+    n_units_l2: 32
+    n_units_l3: 192
+Total tuning runtime: 18.47 minutes
+Saved artifacts: models/best_dl_params.txt, models/tune_dl_log.txt, evidence/phase5b/tune_dl_observations.txt
