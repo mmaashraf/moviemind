@@ -43,7 +43,7 @@ SSH: `git clone git@github.com:mmaashraf/moviemind.git`
 The UI calls the API at `MOVIEMIND_API_URL` (default `http://127.0.0.1:8000`).  
 **Ollama** (`http://127.0.0.1:11434`) is only for **Local LLM** parse and the **tool agent**, not for Manual recommend.
 
-Quick start: `bash scripts/restart_moviemind.sh` after artifacts exist — see [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §4–6.
+Quick start: `bash scripts/restart_moviemind.sh` after artifacts exist — see [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 and §7.
 
 ---
 

@@ -49,15 +49,15 @@ These paths are **gitignored** (~160 MB on disk after a typical build):
 | `data/` | Raw MovieLens + `data/processed/*.csv` |
 | `models/` | `*.pkl`, `*.pt`, training logs |
 
-Generate them locally (§4) or unpack **artifacts from the author** (release zip, Drive link, etc.) into `moviemind/data/` and `moviemind/models/` with the same layout as §4.2–4.3.
+Generate them locally (§5) or unpack **artifacts from the author** (release zip, Drive link, etc.) into `moviemind/data/` and `moviemind/models/` with the same layout as §5.2–5.3.
 
 ### 2.3 Three reviewer paths
 
 | Path | Goal | Build `data/` + `models/`? | Run notebooks? |
 |------|------|----------------------------|----------------|
 | **Inspect** | Trust the analysis without recompute | No | No — use committed `evidence/` and notebook source |
-| **Run app** | Streamlit + FastAPI demo | Yes — §4.2 + §4.3 Path A or C (or author zip) | No |
-| **Reproduce** | Re-train and refresh evidence | Yes — §4.3 Path B + README phase steps | Yes — optional, in order |
+| **Run app** | Streamlit + FastAPI demo | Yes — §5.2 + §5.3 Path A or C (or author zip) | No |
+| **Reproduce** | Re-train and refresh evidence | Yes — §5.3 Path B + README phase steps | Yes — optional, in order |
 
 **Inspect-only example:**
 
@@ -70,7 +70,7 @@ jupyter lab notebooks/01_eda.ipynb  # optional
 ls evidence/phase6 evidence/phase9_split_eval
 ```
 
-**Run-app example:** same clone + venv, then §4.2–4.6 (download data, `build_model_artifacts.py features` + `ml`, start API + UI).
+**Run-app example:** same clone + venv, then §5.2–5.3 + §7 (artifacts or build, then `restart_moviemind.sh`).
 
 **Reproduce example:** run notebooks, then `python3 scripts/build_model_artifacts.py all --skip-tune-dl` (or phase-by-phase commands in [`README.md`](README.md)).
 
@@ -84,21 +84,23 @@ Git cannot hold `data/` and `models/` at full size without a separate **release 
 
 **Author (once):** `bash scripts/pack_review_artifacts.sh` → upload `moviemind-artifacts.tar.gz` to a GitHub Release.
 
-**Reviewer (private repo — see §3 for access + token):**
+**Reviewer (public repo — typical):**
 
 ```bash
-git clone git@github.com:mmaashraf/moviemind.git && cd moviemind
+git clone https://github.com/mmaashraf/moviemind.git && cd moviemind
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
-export MOVIEMIND_GITHUB_TOKEN="ghp_..."   # PAT with read access; do not commit
 bash scripts/download_review_artifacts.sh
 bash scripts/restart_moviemind.sh
 ```
 
-Then open http://127.0.0.1:8502 (API on :8000). Time is dominated by clone + pip + download (~160 MB), not training.
+Then open http://127.0.0.1:8502 (API on :8000). First `pip install` may take several minutes (PyTorch). First API start may take up to ~90s while data loads.
 
-Without a release URL, use §4.2–4.3 (15–45 min minimum build).
+**Private repo:** add `export MOVIEMIND_GITHUB_TOKEN="ghp_..."` before download — see §3.
+
+Without a release URL, use §5.2–5.3 (15–45 min minimum build).
 
 ### 2.5 Will re-running notebooks break the app?
 
@@ -162,7 +164,7 @@ bash scripts/download_review_artifacts.sh
 
 **Pass if:** `data/processed/train_features.csv` and `models/gradient_boosting.pkl` exist after the script.
 
-**If you cannot use a token:** skip the release and build locally (§4.2–4.3 Path A, ~15–45 min).
+**If you cannot use a token:** skip the release and build locally (§5.2–5.3 Path A, ~15–45 min).
 
 ---
 
@@ -172,7 +174,7 @@ bash scripts/download_review_artifacts.sh
 - **~8 GB disk** for data + models; **16 GB RAM** recommended if using Ollama locally
 - **macOS / Linux** (Windows may work; Ollama install steps differ)
 - Two terminal windows (API + UI)
-- **Ollama** only if you test **Local LLM** or **Multi-step tool agent** (see §5)
+- **Ollama** only if you test **Local LLM** or **Multi-step tool agent** (see §6)
 
 ---
 
@@ -189,6 +191,8 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
+
+`requirements.txt` pins **`scikit-learn==1.8.0`** to match the release ML pickles (including `gradient_boosting.pkl`).
 
 ### 5.2 Download data
 
@@ -419,7 +423,7 @@ Use this table and tick each row when it passes.
 
 **Fail signals:**
 
-- **503 / Ollama** errors → §5 and §9
+- **503 / Ollama** errors → §6 and §10
 - Agent reply is only `{"name":"get_recommendations",...}` lines → restart API (latest code); see [`docs/AGENT.md`](docs/AGENT.md) pseudo-tool guardrail
 - **404** on stream → restart API so `/agent/query/stream` is registered
 
@@ -467,7 +471,8 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
-| No models in dropdown / `available: false` | Missing `models/*.pkl` or `*.pt` | Run §4.3 Path A or B |
+| No models in dropdown / `available: false` | Missing `models/*.pkl` or `*.pt` | Run §5.3 Path A or B |
+| `gradient_boosting` unavailable / load_error | sklearn version drift | `pip install scikit-learn==1.8.0` and restart API |
 | `FileNotFoundError` on recommend | Missing `data/processed/` | Run `features` step |
 | Ollama connection error | Daemon not running | `bash scripts/setup_local_ollama.sh` or open Ollama app |
 | Read timeout on tool agent | Slow GPU/CPU or low timeout | `export MOVIEMIND_AGENT_TIMEOUT_SEC=300` then restart API |

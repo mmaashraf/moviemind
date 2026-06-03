@@ -51,7 +51,7 @@ CURL_ARGS=(-fsSL)
 if [[ -n "${TOKEN}" ]]; then
   CURL_ARGS+=(-H "Authorization: Bearer ${TOKEN}")
 else
-  echo "Note: no MOVIEMIND_GITHUB_TOKEN / GITHUB_TOKEN set. Private repos require a token or curl will 404."
+  echo "Note: no MOVIEMIND_GITHUB_TOKEN set (OK for public repos; required for private release assets)."
 fi
 
 echo "Downloading artifacts from: $URL"

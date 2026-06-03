@@ -128,13 +128,14 @@ wait_for_url() {
 }
 
 start_api() {
-  local reload_args=()
-  if [[ "${RELOAD}" == "1" ]]; then
-    reload_args=(--reload)
-  fi
   log "Starting API on ${API_URL} ..."
-  nohup uvicorn src.api.app:app --host "${API_HOST}" --port "${API_PORT}" "${reload_args[@]}" \
-    >"${LOG_DIR}/api.log" 2>&1 &
+  if [[ "${RELOAD}" == "1" ]]; then
+    nohup uvicorn src.api.app:app --host "${API_HOST}" --port "${API_PORT}" --reload \
+      >"${LOG_DIR}/api.log" 2>&1 &
+  else
+    nohup uvicorn src.api.app:app --host "${API_HOST}" --port "${API_PORT}" \
+      >"${LOG_DIR}/api.log" 2>&1 &
+  fi
   echo $! >"${API_PID_FILE}"
   log "API pid $(cat "${API_PID_FILE}") — log: ${LOG_DIR}/api.log"
 }
@@ -151,10 +152,6 @@ start_ui() {
 }
 
 start_foreground() {
-  local reload_args=()
-  if [[ "${RELOAD}" == "1" ]]; then
-    reload_args=(--reload)
-  fi
   log "Foreground mode: API in background, Streamlit in foreground (Ctrl+C stops UI only)"
   start_api
   wait_for_url "${API_URL}/health" "API" 40 || true
@@ -179,7 +176,8 @@ start_services() {
   fi
   start_api
   start_ui
-  wait_for_url "${API_URL}/health" "API" 40 || true
+  # First API boot loads large processed CSVs into memory; allow extra time on cold start.
+  wait_for_url "${API_URL}/health" "API" 90 || true
   wait_for_url "${UI_URL}" "UI" 60 || true
   log "Done."
   log "  API: ${API_URL}/docs"
