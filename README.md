@@ -11,7 +11,8 @@ End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, Fast
 | I want to… | Open |
 |------------|------|
 | **Run the app** (install, build, verify) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) |
-| **~2 min run** (release tarball + download script) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 |
+| **Artifacts + scripts** (pack / download / restart) | [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
+| **~2 min run** (release tarball) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 |
 | **Reproduce training** (notebooks + script order) | [`REPLICATION.md`](REPLICATION.md) |
 | **Tool agent / SSE** | [`docs/AGENT.md`](docs/AGENT.md) |
 | **UI ↔ API** | [`docs/APP_AND_API.md`](docs/APP_AND_API.md) |
@@ -90,7 +91,7 @@ Interactive docs: http://127.0.0.1:8000/docs
 |--------|---------|
 | `scripts/restart_moviemind.sh` | Start API + UI |
 | `scripts/build_model_artifacts.py` | Chain training phases — see [`REPLICATION.md`](REPLICATION.md) |
-| `scripts/download_review_artifacts.sh` | Pull pre-built `data/` + `models/` from a release URL |
+| `scripts/download_review_artifacts.sh` | Pull pre-built `data/` + `models/` — see [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
 | `scripts/pack_review_artifacts.sh` | Create tarball for GitHub Release |
 | `scripts/setup_local_ollama.sh` | Ollama install + default model |
 | `scripts/test_local_llm.sh` | API + NLP smoke |

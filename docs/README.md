@@ -12,6 +12,7 @@
 
 | Doc | Topic |
 |-----|--------|
+| [`ARTIFACTS_AND_RUNTIME.md`](ARTIFACTS_AND_RUNTIME.md) | Pack / download / restart scripts; release tarball flow |
 | [`AGENT.md`](AGENT.md) | Multi-step tool agent, SSE, env vars |
 | [`APP_AND_API.md`](APP_AND_API.md) | Streamlit UI ↔ REST API |
 | [`OLLAMA.md`](OLLAMA.md) | Ollama install, `/nlp/query` local LLM |

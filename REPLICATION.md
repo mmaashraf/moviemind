@@ -3,7 +3,7 @@
 Single source for **which notebooks to run**, **which scripts in what order**, and how that maps to project phases and `evidence/`.
 
 - **Run the app only (no training):** stop at [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §4–6.
-- **Fast artifacts (no local train):** [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 + `scripts/download_review_artifacts.sh`.
+- **Fast artifacts (no local train):** [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) + [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4.
 
 All commands assume you are in the **`moviemind/`** directory with venv active. `data/` and `models/` are **gitignored**.
 

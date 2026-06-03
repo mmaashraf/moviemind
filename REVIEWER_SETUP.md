@@ -6,7 +6,8 @@
 - **Notebooks + training script order:** [`REPLICATION.md`](REPLICATION.md)  
 - **Tool agent / SSE:** [`docs/AGENT.md`](docs/AGENT.md)  
 - **UI ↔ API:** [`docs/APP_AND_API.md`](docs/APP_AND_API.md)  
-- **Ollama NLP parse:** [`docs/OLLAMA.md`](docs/OLLAMA.md)
+- **Ollama NLP parse:** [`docs/OLLAMA.md`](docs/OLLAMA.md)  
+- **Pack / download / restart (end-to-end):** [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md)
 
 ---
 
@@ -72,6 +73,8 @@ ls evidence/phase6 evidence/phase9_split_eval
 **Reproduce example:** run notebooks, then `python3 scripts/build_model_artifacts.py all --skip-tune-dl` (or phase-by-phase commands in [`README.md`](README.md)).
 
 ### 2.4 Clone and run in ~2 minutes (pre-built artifacts)
+
+Full diagram and script reference: [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md).
 
 Git cannot hold `data/` and `models/` at full size without a separate **release tarball**. After you publish one:
 

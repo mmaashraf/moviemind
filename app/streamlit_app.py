@@ -1382,6 +1382,7 @@ def lifecycle_evidence_page() -> None:
         ("README.md", PROJECT_ROOT / "README.md"),
         ("REVIEWER_SETUP.md", PROJECT_ROOT / "REVIEWER_SETUP.md"),
         ("REPLICATION.md", PROJECT_ROOT / "REPLICATION.md"),
+        ("docs/ARTIFACTS_AND_RUNTIME.md", PROJECT_ROOT / "docs" / "ARTIFACTS_AND_RUNTIME.md"),
         ("docs/APP_AND_API.md", PROJECT_ROOT / "docs" / "APP_AND_API.md"),
         ("docs/AGENT.md", PROJECT_ROOT / "docs" / "AGENT.md"),
         ("docs/internal/PROGRESS_TRACKER.md", PROJECT_ROOT / "docs" / "internal" / "PROGRESS_TRACKER.md"),
