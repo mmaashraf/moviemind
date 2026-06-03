@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # MovieMind: stop API + Streamlit on known ports, then start fresh (background).
+# Local demo only: binds 127.0.0.1 by default — no TLS, API auth, or rate limits.
 #
 # Usage (from anywhere):
 #   bash scripts/restart_moviemind.sh

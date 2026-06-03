@@ -1,8 +1,30 @@
 # Security review (pre-public repository)
 
-MovieMind is a **local development / course demo** stack, not a hardened production service. This document records a pre-public review and safe usage expectations.
+MovieMind is **for local run on your machine right now** — a course demo and reviewer workflow, **not** a deployed internet service.
 
 **Reviewed:** 2026-06-03 · **Scope:** `src/`, `app/`, `scripts/`, tracked files (no secrets in git history for `ghp_`, `api_key`, etc.)
+
+---
+
+## Local-only scope (read this first)
+
+This project **does not implement** and **does not target**:
+
+| Capability | Status |
+|------------|--------|
+| **TLS / HTTPS** | Not included — HTTP on `127.0.0.1` only |
+| **API authentication** | Not included — no API keys, sessions, or OAuth |
+| **Authorization / RBAC** | Not included |
+| **Rate limiting** | Not included |
+| **Production hardening** | Out of scope unless you fork and extend the project |
+
+**Intended use today:** one developer or reviewer on **localhost**:
+
+- API: `http://127.0.0.1:8000` (see `scripts/restart_moviemind.sh`)
+- UI: `http://127.0.0.1:8502`
+- Ollama (optional): `http://127.0.0.1:11434`
+
+Do **not** expose these ports on `0.0.0.0` or the public internet and treat the stack as production-ready. It is a **local capstone demo** only.
 
 ---
 
@@ -12,7 +34,7 @@ No committed API keys, passwords, or `.env` files were found. `.gitignore` exclu
 
 Making the repo **public** removes the need for reviewer GitHub tokens (§3 in `REVIEWER_SETUP.md`). The **release tarball** can be downloaded without authentication.
 
-**Do not** expose the FastAPI or Streamlit ports to the open internet without authentication and TLS — see risks below.
+Publishing the **source repo** is fine; running the **servers on the open internet** without building TLS, auth, and rate limits yourself is not supported by this project.
 
 ---
 
@@ -54,7 +76,7 @@ Making the repo **public** removes the need for reviewer GitHub tokens (§3 in `
 |-------|--------|----------|
 | Prompt injection | Inherent | User query is sent to Ollama. Acceptable for local capstone; do not expose agent to untrusted internet users. |
 | SSRF via `MOVIEMIND_OLLAMA_URL` | Env-only | Server-side env var, not client-controlled. Keep Ollama on localhost. |
-| Cost / abuse | N/A locally | Public deployment would need rate limits and auth. |
+| Cost / abuse | N/A on localhost | Not applicable — no rate limits in this repo |
 
 ### Pickle / joblib models (`model_registry.py`)
 
@@ -89,7 +111,7 @@ MOVIEMIND_API_HOST=127.0.0.1
 # Do not bind 0.0.0.0 on a shared or cloud VM without a firewall and auth
 ```
 
-For production-style deployment you would add: HTTPS, API auth, rate limiting, non-reload uvicorn, and restricted CORS — **out of scope** for this capstone unless you extend the project.
+If you later deploy beyond localhost, you must add your own HTTPS, authentication, rate limiting, and network controls. **That is not part of MovieMind as shipped.**
 
 ---
 

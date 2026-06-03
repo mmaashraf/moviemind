@@ -2,6 +2,8 @@
 
 **This is the dedicated setup guide** for cloning, installing, building artifacts, running the app, and verifying results.
 
+**Local only:** Run API and UI on **localhost** (`127.0.0.1`). This project has **no TLS, API authentication, or rate limiting** — it is a course demo, not a production deployment. See [`docs/SECURITY.md`](docs/SECURITY.md).
+
 - **Project overview:** [`README.md`](README.md)  
 - **Notebooks + training script order:** [`REPLICATION.md`](REPLICATION.md)  
 - **Tool agent / SSE:** [`docs/AGENT.md`](docs/AGENT.md)  

@@ -126,6 +126,8 @@ bash scripts/download_review_artifacts.sh
 
 ## `restart_moviemind.sh`
 
+**Local only:** starts HTTP services on **127.0.0.1** — no TLS, auth, or rate limits ([`SECURITY.md`](SECURITY.md)).
+
 **Who:** anyone with artifacts on disk.  
 **When:** whenever you want a clean API + UI on default ports.  
 **Run from:** `moviemind/` (or any path; script `cd`s to repo root)

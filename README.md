@@ -4,6 +4,8 @@ End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, Fast
 
 **Best model in this repo’s evals:** Gradient Boosting (RMSE ~0.897). See `evidence/phase9_split_eval/` for split summaries.
 
+**Deployment scope:** **Local run only** (`127.0.0.1`) — no TLS, API auth, or rate limits. Not intended as a public internet service. See [`docs/SECURITY.md`](docs/SECURITY.md).
+
 ---
 
 ## Start here

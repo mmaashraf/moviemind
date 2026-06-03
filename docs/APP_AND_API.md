@@ -2,6 +2,8 @@
 
 **Reviewers:** use [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) for clone → build → run → checklist.
 
+**Local only:** FastAPI and Streamlit are meant for **localhost** (`127.0.0.1`). This stack has **no TLS, API auth, or rate limits** — see [`SECURITY.md`](SECURITY.md).
+
 ## 1) System Architecture
 
 MovieMind Phase 7-8 uses a backend-plus-frontend split:
