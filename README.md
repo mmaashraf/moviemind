@@ -18,6 +18,7 @@ End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, Fast
 | **UI ↔ API** | [`docs/APP_AND_API.md`](docs/APP_AND_API.md) |
 | **Ollama / local LLM** | [`docs/OLLAMA.md`](docs/OLLAMA.md) |
 | **All docs index** | [`docs/README.md`](docs/README.md) |
+| **Security (before public)** | [`docs/SECURITY.md`](docs/SECURITY.md) |
 | **Metrics & plots already run** | `evidence/phase9_split_eval/`, `evidence/phase6/` |
 | **Phase checklist (author)** | [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md) |
 

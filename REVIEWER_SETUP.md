@@ -82,13 +82,14 @@ Git cannot hold `data/` and `models/` at full size without a separate **release 
 
 **Author (once):** `bash scripts/pack_review_artifacts.sh` → upload `moviemind-artifacts.tar.gz` to a GitHub Release.
 
-**Reviewer:**
+**Reviewer (private repo — see §3 for access + token):**
 
 ```bash
-git clone https://github.com/mmaashraf/moviemind.git && cd moviemind
+git clone git@github.com:mmaashraf/moviemind.git && cd moviemind
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
+export MOVIEMIND_GITHUB_TOKEN="ghp_..."   # PAT with read access; do not commit
 bash scripts/download_review_artifacts.sh
 bash scripts/restart_moviemind.sh
 ```
@@ -120,7 +121,50 @@ Notebooks and the training pipeline are **separate paths** until someone deliber
 
 ---
 
-## 3. Prerequisites
+## 3. Repository access (public vs private)
+
+**Public repo (recommended for reviewers):** clone is open; release download works **without** a GitHub token — skip to §5 after §2.4 download.
+
+**Private repo:** reviewers need **both** code access and a token to download the release asset.
+
+### 3.1 What you need from the author
+
+| Requirement | Why |
+|-------------|-----|
+| **Collaborator** (or org read access) on `mmaashraf/moviemind` | `git clone` over HTTPS/SSH |
+| **Release asset URL** (see §2.4) | `download_review_artifacts.sh` |
+| **GitHub token** (private repo only) | Unauthenticated `curl` returns **404** on private release files |
+
+The author should invite your GitHub username under **Settings → Collaborators** (read access is enough).
+
+### 3.2 Clone the repo
+
+Use SSH (if your key is on GitHub):
+
+```bash
+git clone git@github.com:mmaashraf/moviemind.git
+cd moviemind
+```
+
+Or HTTPS (GitHub will prompt for credentials or use a PAT as password).
+
+### 3.3 Download artifacts (private release)
+
+Create a **classic PAT** or fine-grained token with **read access to this repository** (scope: `repo` for classic). Do **not** commit or paste the token into the repo.
+
+```bash
+export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
+export MOVIEMIND_GITHUB_TOKEN="ghp_your_token_here"   # or export GITHUB_TOKEN=...
+bash scripts/download_review_artifacts.sh
+```
+
+**Pass if:** `data/processed/train_features.csv` and `models/gradient_boosting.pkl` exist after the script.
+
+**If you cannot use a token:** skip the release and build locally (§4.2–4.3 Path A, ~15–45 min).
+
+---
+
+## 4. Prerequisites
 
 - **Python 3.10+** (3.11–3.13 tested in development)
 - **~8 GB disk** for data + models; **16 GB RAM** recommended if using Ollama locally
@@ -130,11 +174,11 @@ Notebooks and the training pipeline are **separate paths** until someone deliber
 
 ---
 
-## 4. Standard setup (required for all reviewers)
+## 5. Standard setup (required for all reviewers)
 
 Run every command from the **`moviemind/`** directory (repo root for this project).
 
-### 4.1 Clone and Python environment
+### 5.1 Clone and Python environment
 
 ```bash
 cd moviemind
@@ -144,7 +188,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-### 4.2 Download data
+### 5.2 Download data
 
 ```bash
 python3 src/data_loader.py
@@ -156,7 +200,7 @@ python3 src/data_loader.py
 - `data/ml-1m/movies.dat`
 - `data/ml-1m/users.dat`
 
-### 4.3 Build features and models (pick one path)
+### 5.3 Build features and models (pick one path)
 
 #### Path A — Recommended minimum (~15–45 min)
 
@@ -198,7 +242,7 @@ python3 scripts/build_model_artifacts.py features
 
 Then use model **`baseline_global_mean`** in the UI (no `.pkl` required). Recommendations still need processed features from the `features` step.
 
-### 4.4 Optional unit check (sklearn pickle roundtrip)
+### 5.4 Optional unit check (sklearn pickle roundtrip)
 
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py" -v
@@ -206,7 +250,7 @@ python3 -m unittest discover -s tests -p "test_*.py" -v
 
 ---
 
-## 5. Ollama (only for LLM / tool agent)
+## 6. Ollama (only for LLM / tool agent)
 
 **Not required** for:
 
@@ -218,7 +262,7 @@ python3 -m unittest discover -s tests -p "test_*.py" -v
 - **Parse Query** with **Local LLM**
 - **Multi-step tool agent (Ollama)**
 
-### 5.1 Install and start
+### 6.1 Install and start
 
 ```bash
 bash scripts/setup_local_ollama.sh
@@ -240,7 +284,7 @@ curl -s http://127.0.0.1:11434/api/tags | head
 
 You should see JSON listing models.
 
-### 5.2 Optional NLP smoke script
+### 6.2 Optional NLP smoke script
 
 ```bash
 bash scripts/test_local_ollama.sh
@@ -248,7 +292,7 @@ bash scripts/test_local_ollama.sh
 
 Writes a log under `evidence/phase8/` with `parsed_by=local-llm-ollama` when successful.
 
-### 5.3 Environment (optional overrides)
+### 6.3 Environment (optional overrides)
 
 | Variable | Default | Used by |
 |----------|---------|---------|
@@ -258,7 +302,7 @@ Writes a log under `evidence/phase8/` with `parsed_by=local-llm-ollama` when suc
 
 ---
 
-## 6. Run the application
+## 7. Run the application
 
 ### Option A — One script (recommended for reviewers)
 
@@ -327,17 +371,17 @@ Open the UI at `http://127.0.0.1:8502`.
 
 ---
 
-## 7. Verification checklist (UI)
+## 8. Verification checklist (UI)
 
 Use this table and tick each row when it passes.
 
-### 7.1 System tab
+### 8.1 System tab
 
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Open **System** | **API is healthy** + JSON from `/health` |
 
-### 7.2 Manual recommend (no Ollama)
+### 8.2 Manual recommend (no Ollama)
 
 | Step | Action | Expected |
 |------|--------|----------|
@@ -346,7 +390,7 @@ Use this table and tick each row when it passes.
 | 3 | **Get Recommendations** | Table with movie titles, genres, predicted ratings |
 | 4 | Change Top N | Previous table can remain until you click again (session behavior) |
 
-### 7.3 Parse Query — Local LLM (Ollama required)
+### 8.3 Parse Query — Local LLM (Ollama required)
 
 | Step | Action | Expected |
 |------|--------|----------|
@@ -358,7 +402,7 @@ Use this table and tick each row when it passes.
 
 **Note:** The API accepts `runtime_mode` **`local-llm`** or **`api-llm`** only (see `NLPQueryRequest` in `src/api/schemas.py`). There is no `rule-only` mode on `/nlp/query` in the current code.
 
-### 7.4 Tool agent (Ollama required)
+### 8.4 Tool agent (Ollama required)
 
 | Step | Action | Expected |
 |------|--------|----------|
@@ -377,13 +421,13 @@ Use this table and tick each row when it passes.
 - Agent reply is only `{"name":"get_recommendations",...}` lines → restart API (latest code); see [`docs/AGENT.md`](docs/AGENT.md) pseudo-tool guardrail
 - **404** on stream → restart API so `/agent/query/stream` is registered
 
-### 7.5 Ollama tab
+### 8.5 Ollama tab
 
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Open **Ollama** tab → **Refresh Ollama snapshot** | `/api/version` reachable; `/api/tags` lists models |
 
-### 7.6 User resource 404 (API)
+### 8.6 User resource 404 (API)
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8000/users/999999/summary
@@ -393,7 +437,7 @@ Expected: **`404`** for an out-of-range user id.
 
 ---
 
-## 8. Verification checklist (API only)
+## 9. Verification checklist (API only)
 
 If you prefer curl over the UI:
 
@@ -417,7 +461,7 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
@@ -430,7 +474,7 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 
 ---
 
-## 10. Suggested reviewer time budget
+## 11. Suggested reviewer time budget
 
 | Goal | Time |
 |------|------|
@@ -441,7 +485,7 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 
 ---
 
-## 11. Default branch
+## 12. Default branch
 
 Use **`main`** (tool agent merged via PR #11). Confirm OpenAPI includes:
 
@@ -454,7 +498,7 @@ curl -s http://127.0.0.1:8000/openapi.json | python3 -c "import sys,json; p=json
 
 ---
 
-## 12. Evidence you can attach to a review
+## 13. Evidence you can attach to a review
 
 Optional proof for a written review:
 

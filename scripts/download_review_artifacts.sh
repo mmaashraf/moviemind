@@ -5,6 +5,9 @@
 #   export MOVIEMIND_ARTIFACTS_URL="https://github.com/.../releases/download/.../moviemind-artifacts.tar.gz"
 #   bash scripts/download_review_artifacts.sh
 #
+# Private repo: also set a GitHub token with repo read access (never commit tokens):
+#   export MOVIEMIND_GITHUB_TOKEN="ghp_..."   # or GITHUB_TOKEN
+#
 # Or pass the URL as the first argument.
 
 set -euo pipefail
@@ -43,8 +46,16 @@ fi
 TMP="$(mktemp -t moviemind-artifacts.XXXXXX.tar.gz)"
 trap 'rm -f "$TMP"' EXIT
 
+TOKEN="${MOVIEMIND_GITHUB_TOKEN:-${GITHUB_TOKEN:-}}"
+CURL_ARGS=(-fsSL)
+if [[ -n "${TOKEN}" ]]; then
+  CURL_ARGS+=(-H "Authorization: Bearer ${TOKEN}")
+else
+  echo "Note: no MOVIEMIND_GITHUB_TOKEN / GITHUB_TOKEN set. Private repos require a token or curl will 404."
+fi
+
 echo "Downloading artifacts from: $URL"
-curl -fsSL "$URL" -o "$TMP"
+curl "${CURL_ARGS[@]}" "$URL" -o "$TMP"
 tar -xzf "$TMP" -C "$ROOT"
 
 if [[ ! -f "data/processed/train_features.csv" || ! -f "models/gradient_boosting.pkl" ]]; then
