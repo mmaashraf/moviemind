@@ -4,9 +4,9 @@
 
 - **Project overview:** [`README.md`](README.md)  
 - **Notebooks + training script order:** [`REPLICATION.md`](REPLICATION.md)  
-- **Tool agent / SSE:** [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md)  
-- **UI ↔ API:** [`WEBAPP_AGENT_WIKI.md`](WEBAPP_AGENT_WIKI.md)  
-- **Ollama NLP parse:** [`LOCAL_LLM_WIKI.md`](LOCAL_LLM_WIKI.md)
+- **Tool agent / SSE:** [`docs/AGENT.md`](docs/AGENT.md)  
+- **UI ↔ API:** [`docs/APP_AND_API.md`](docs/APP_AND_API.md)  
+- **Ollama NLP parse:** [`docs/OLLAMA.md`](docs/OLLAMA.md)
 
 ---
 
@@ -369,7 +369,7 @@ Use this table and tick each row when it passes.
 **Fail signals:**
 
 - **503 / Ollama** errors → §5 and §9
-- Agent reply is only `{"name":"get_recommendations",...}` lines → restart API (latest code); see [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md) pseudo-tool guardrail
+- Agent reply is only `{"name":"get_recommendations",...}` lines → restart API (latest code); see [`docs/AGENT.md`](docs/AGENT.md) pseudo-tool guardrail
 - **404** on stream → restart API so `/agent/query/stream` is registered
 
 ### 7.5 Ollama tab
@@ -421,7 +421,7 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 | Ollama connection error | Daemon not running | `bash scripts/setup_local_ollama.sh` or open Ollama app |
 | Read timeout on tool agent | Slow GPU/CPU or low timeout | `export MOVIEMIND_AGENT_TIMEOUT_SEC=300` then restart API |
 | SSE 404 | Old API process | Restart uvicorn with `--reload` on latest branch |
-| Only 1 **Turn used** | Model batched tools in one round | Normal for short prompts; use longer multi-step query in [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md) §8 |
+| Only 1 **Turn used** | Model batched tools in one round | Normal for short prompts; use longer multi-step query in [`docs/AGENT.md`](docs/AGENT.md) §8 |
 
 ---
 

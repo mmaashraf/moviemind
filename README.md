@@ -13,11 +13,12 @@ End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, Fast
 | **Run the app** (install, build, verify) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) |
 | **~2 min run** (release tarball + download script) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 |
 | **Reproduce training** (notebooks + script order) | [`REPLICATION.md`](REPLICATION.md) |
-| **Tool agent / SSE** | [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md) |
-| **UI ↔ API** | [`WEBAPP_AGENT_WIKI.md`](WEBAPP_AGENT_WIKI.md) |
-| **Ollama / local LLM** | [`LOCAL_LLM_WIKI.md`](LOCAL_LLM_WIKI.md) |
+| **Tool agent / SSE** | [`docs/AGENT.md`](docs/AGENT.md) |
+| **UI ↔ API** | [`docs/APP_AND_API.md`](docs/APP_AND_API.md) |
+| **Ollama / local LLM** | [`docs/OLLAMA.md`](docs/OLLAMA.md) |
+| **All docs index** | [`docs/README.md`](docs/README.md) |
 | **Metrics & plots already run** | `evidence/phase9_split_eval/`, `evidence/phase6/` |
-| **Phase checklist (author)** | [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md) |
+| **Phase checklist (author)** | [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md) |
 
 ```bash
 git clone https://github.com/mmaashraf/moviemind.git
@@ -51,7 +52,7 @@ Quick start: `bash scripts/restart_moviemind.sh` after artifacts exist — see [
 | 8 UI + NLP | Done | `local-llm`, `api-llm` |
 | 8x Tool agent | Done | `/agent/query`, `/agent/query/stream` (SSE) |
 
-Detail: [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md)
+Detail: [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md)
 
 ---
 
@@ -112,6 +113,4 @@ Index: [`evidence/README.md`](evidence/README.md)
 
 - **Commands and notebook order:** [`REPLICATION.md`](REPLICATION.md) only (do not duplicate in this file).
 - **Setup/run changes:** update [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
-- **Phase milestones:** update [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md).
-
-Planned doc cleanup: consolidate wikis under `docs/` and move author-only files to `docs/internal/`.
+- **Phase milestones:** update [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md).

@@ -127,4 +127,4 @@ See [`evidence/README.md`](evidence/README.md).
 
 ## Author / maintenance docs
 
-Not required for reviewers: `PROGRESS_TRACKER.md`, `CONTEXT_HANDOVER.md`, `AI_CONCEPTS_WIKI.md` (will move under `docs/internal/` in a later cleanup).
+Not required for reviewers: [`docs/internal/`](docs/internal/) (progress, handoff, learning wikis).

@@ -1016,7 +1016,7 @@ def ollama_monitor_page() -> None:
     st.caption(
         "Probes the **Ollama HTTP API** from this Streamlit process using **`MOVIEMIND_OLLAMA_URL`**. "
         "Use it wherever the UI runs to see tags, loaded models, and basic health. "
-        "For setup details see **`LOCAL_LLM_WIKI.md`**."
+        "For setup details see **`docs/OLLAMA.md`**."
     )
     base = _ollama_base_url()
     st.code(base, language="text")
@@ -1380,10 +1380,12 @@ def lifecycle_evidence_page() -> None:
     st.markdown("### Canonical Project Documents (Exact Content)")
     doc_paths = [
         ("README.md", PROJECT_ROOT / "README.md"),
-        ("CONTEXT_HANDOVER.md", PROJECT_ROOT / "CONTEXT_HANDOVER.md"),
-        ("AI_CONCEPTS_WIKI.md", PROJECT_ROOT / "AI_CONCEPTS_WIKI.md"),
-        ("WEBAPP_AGENT_WIKI.md", PROJECT_ROOT / "WEBAPP_AGENT_WIKI.md"),
-        ("PROGRESS_TRACKER.md", PROJECT_ROOT / "PROGRESS_TRACKER.md"),
+        ("REVIEWER_SETUP.md", PROJECT_ROOT / "REVIEWER_SETUP.md"),
+        ("REPLICATION.md", PROJECT_ROOT / "REPLICATION.md"),
+        ("docs/APP_AND_API.md", PROJECT_ROOT / "docs" / "APP_AND_API.md"),
+        ("docs/AGENT.md", PROJECT_ROOT / "docs" / "AGENT.md"),
+        ("docs/internal/PROGRESS_TRACKER.md", PROJECT_ROOT / "docs" / "internal" / "PROGRESS_TRACKER.md"),
+        ("docs/internal/CONTEXT_HANDOVER.md", PROJECT_ROOT / "docs" / "internal" / "CONTEXT_HANDOVER.md"),
     ]
     for title, path in doc_paths:
         with st.expander(title, expanded=False):
@@ -1663,12 +1665,12 @@ Why this matters:
     st.write("- PCA: linear projection maximizing variance.")
     st.write("- t-SNE: nonlinear neighborhood-preserving map for cluster intuition.")
 
-    with st.expander("Open Full Learning Wiki (AI_CONCEPTS_WIKI.md)", expanded=False):
-        concepts_path = PROJECT_ROOT / "AI_CONCEPTS_WIKI.md"
+    with st.expander("Open Full Learning Wiki (docs/internal/learning/AI_CONCEPTS_WIKI.md)", expanded=False):
+        concepts_path = PROJECT_ROOT / "docs" / "internal" / "learning" / "AI_CONCEPTS_WIKI.md"
         if concepts_path.exists():
             st.markdown(concepts_path.read_text(encoding="utf-8"))
         else:
-            st.warning("AI_CONCEPTS_WIKI.md not found.")
+            st.warning("docs/internal/learning/AI_CONCEPTS_WIKI.md not found.")
 
 
 def main() -> None:

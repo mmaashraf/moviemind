@@ -172,10 +172,10 @@ Convert model internals into interpretable outputs for trust, debugging, and pre
 
 A major strength of this lifecycle is that technical work was paired with explicit operational discipline:
 
-- `PROGRESS_TRACKER.md`: phase status truth board.
-- `CONTEXT_HANDOVER.md`: continuity brain for next sessions.
-- `README.md`: reproducible execution guide.
-- `AI_CONCEPTS_WIKI.md`: active learning/theory record.
+- `docs/internal/PROGRESS_TRACKER.md`: phase status truth board.
+- `docs/internal/CONTEXT_HANDOVER.md`: continuity brain for next sessions.
+- `REPLICATION.md`: reproducible execution guide.
+- `docs/internal/learning/AI_CONCEPTS_WIKI.md`: active learning/theory record.
 - `evidence/`: run outputs, audits, reviews, and artifacts.
 
 ### Why this matters in ML lifecycle terms

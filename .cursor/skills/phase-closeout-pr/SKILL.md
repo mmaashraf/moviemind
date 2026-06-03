@@ -19,10 +19,10 @@ Use this workflow when a MovieMind phase is completed.
 1. Confirm current branch and status.
 2. Ensure evidence artifacts for the phase exist under `evidence/<phase>/`.
 3. Ensure docs are synced:
-   - `PROGRESS_TRACKER.md`
-   - `CONTEXT_HANDOVER.md`
+   - `docs/internal/PROGRESS_TRACKER.md`
+   - `docs/internal/CONTEXT_HANDOVER.md`
    - `README.md`
-   - `AI_CONCEPTS_WIKI.md` (when new concepts were learned)
+   - `docs/internal/learning/AI_CONCEPTS_WIKI.md` (when new concepts were learned)
 4. Make phase-focused commits (avoid mixed commit scope).
 5. Push branch to origin.
 6. Create/open PR using helper script.
