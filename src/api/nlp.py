@@ -5,6 +5,14 @@ from typing import Any, Dict, Tuple
 import requests
 
 
+class LocalLLMUnavailableError(Exception):
+    """Raised when Ollama/local LLM cannot return a valid parse (no silent rule fallback)."""
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
+
+
 SUPPORTED_GENRES = [
     "action",
     "adventure",
@@ -85,12 +93,7 @@ def _rule_parse(query: str) -> Dict[str, Any]:
 
 
 def _local_llm_parse(query: str) -> Dict[str, Any]:
-    """Ollama-backed parser with strict schema guardrails and deterministic fallback."""
-    fallback = _rule_parse(query)
-    fallback["parsed_by"] = "local-llm-fallback"
-    fallback["confidence"] = max(0.55, fallback["confidence"] - 0.1)
-    fallback["explanation"] = "Local LLM mode selected; using safe fallback parser with strict schema."
-
+    """Ollama-backed parser with strict schema guardrails. Raises if Ollama cannot complete."""
     endpoint = os.environ.get("MOVIEMIND_OLLAMA_URL", "http://127.0.0.1:11434")
     model = os.environ.get("MOVIEMIND_OLLAMA_MODEL", "llama3.1:8b")
     timeout_sec = float(os.environ.get("MOVIEMIND_OLLAMA_TIMEOUT_SEC", "12"))
@@ -117,49 +120,53 @@ def _local_llm_parse(query: str) -> Dict[str, Any]:
         resp.raise_for_status()
         body = resp.json()
         raw_text = str(body.get("response", "")).strip()
-        llm_obj = json.loads(raw_text) if raw_text else {}
-
-        # Guardrails: normalize and bound
-        intent = str(llm_obj.get("intent", fallback["intent"])).lower()
-        if intent not in {"recommend", "predict", "explain"}:
-            intent = fallback["intent"]
-        filters = llm_obj.get("filters", {}) if isinstance(llm_obj.get("filters", {}), dict) else {}
-        if "top_n" in filters:
-            filters["top_n"] = _bounded_top_n(filters["top_n"])
-        if "user_id" in filters:
-            try:
-                filters["user_id"] = max(1, int(filters["user_id"]))
-            except Exception:
-                filters.pop("user_id", None)
-        if "genre" in filters:
-            g = str(filters["genre"]).strip().lower()
-            if g not in SUPPORTED_GENRES:
-                filters.pop("genre", None)
-            else:
-                filters["genre"] = g
-        model_hint = llm_obj.get("model_hint")
-        if model_hint not in {
-            None,
-            "baseline_global_mean",
-            "linear_regression",
-            "random_forest",
-            "gradient_boosting",
-            "ncf_baseline",
-            "ncf_tuned",
-        }:
-            model_hint = None
-
-        return {
-            "parsed_by": "local-llm-ollama",
-            "confidence": 0.82 if filters else 0.7,
-            "intent": intent,
-            "filters": filters,
-            "model_hint": model_hint,
-            "explanation": f"Parsed via local Ollama model `{model}` with schema guardrails.",
-        }
+        if not raw_text:
+            raise ValueError("Empty JSON/text from Ollama response")
+        llm_obj = json.loads(raw_text)
+        if not isinstance(llm_obj, dict):
+            raise ValueError("Ollama JSON must be an object")
     except Exception as exc:
-        fallback["explanation"] += f" Local LLM unavailable/error: {exc}"
-        return fallback
+        raise LocalLLMUnavailableError(f"{exc}") from exc
+
+    # Guardrails: normalize and bound (soft fixes; no rule-parser fallback)
+    intent = str(llm_obj.get("intent", "recommend")).lower()
+    if intent not in {"recommend", "predict", "explain"}:
+        intent = "recommend"
+    _raw_f = llm_obj.get("filters", {})
+    filters = _raw_f if isinstance(_raw_f, dict) else {}
+    if "top_n" in filters:
+        filters["top_n"] = _bounded_top_n(filters["top_n"])
+    if "user_id" in filters:
+        try:
+            filters["user_id"] = max(1, int(filters["user_id"]))
+        except Exception:
+            filters.pop("user_id", None)
+    if "genre" in filters:
+        g = str(filters["genre"]).strip().lower()
+        if g not in SUPPORTED_GENRES:
+            filters.pop("genre", None)
+        else:
+            filters["genre"] = g
+    model_hint = llm_obj.get("model_hint")
+    if model_hint not in {
+        None,
+        "baseline_global_mean",
+        "linear_regression",
+        "random_forest",
+        "gradient_boosting",
+        "ncf_baseline",
+        "ncf_tuned",
+    }:
+        model_hint = None
+
+    return {
+        "parsed_by": "local-llm-ollama",
+        "confidence": 0.82 if filters else 0.7,
+        "intent": intent,
+        "filters": filters,
+        "model_hint": model_hint,
+        "explanation": f"Parsed via local Ollama model `{model}` with schema guardrails.",
+    }
 
 
 def _api_llm_parse(query: str) -> Dict[str, Any]:
@@ -172,9 +179,7 @@ def _api_llm_parse(query: str) -> Dict[str, Any]:
 
 
 def parse_query(query: str, runtime_mode: str) -> Tuple[str, Dict[str, Any]]:
-    runtime_mode = runtime_mode.lower()
-    if runtime_mode == "rule-only":
-        return runtime_mode, _rule_parse(query)
+    runtime_mode = runtime_mode.lower().strip()
     if runtime_mode == "local-llm":
         return runtime_mode, _local_llm_parse(query)
     if runtime_mode == "api-llm":
@@ -185,5 +190,5 @@ def parse_query(query: str, runtime_mode: str) -> Tuple[str, Dict[str, Any]]:
             payload["explanation"] += " Enable MOVIEMIND_API_LLM_ENABLED=1 to activate API client path."
             return runtime_mode, payload
         return runtime_mode, _api_llm_parse(query)
-    return "rule-only", _rule_parse(query)
+    raise ValueError(f"Unsupported runtime_mode: {runtime_mode!r} (expected local-llm or api-llm)")
 

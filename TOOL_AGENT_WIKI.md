@@ -2,6 +2,8 @@
 
 This document describes the **tool-calling agent** (`POST /agent/query` and **`POST /agent/query/stream`** for SSE), how it differs from the **quick NLP parser** (`POST /nlp/query`), the technical concepts involved, and how to exercise it from the Streamlit UI.
 
+**Reviewers:** end-to-end setup and verification checklist → [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
+
 ---
 
 ## 1. Why two NLP-flavored paths?
