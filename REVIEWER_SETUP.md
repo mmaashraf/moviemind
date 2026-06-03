@@ -2,7 +2,8 @@
 
 **This is the dedicated setup guide** for cloning, installing, building artifacts, running the app, and verifying results.
 
-- **Project overview and full phase replication:** [`README.md`](README.md)  
+- **Project overview:** [`README.md`](README.md)  
+- **Notebooks + training script order:** [`REPLICATION.md`](REPLICATION.md)  
 - **Tool agent / SSE:** [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md)  
 - **UI ↔ API:** [`WEBAPP_AGENT_WIKI.md`](WEBAPP_AGENT_WIKI.md)  
 - **Ollama NLP parse:** [`LOCAL_LLM_WIKI.md`](LOCAL_LLM_WIKI.md)
@@ -435,11 +436,9 @@ curl -s -X POST http://127.0.0.1:8000/nlp/query \
 
 ---
 
-## 11. Branch note
+## 11. Default branch
 
-Tool-agent streaming and guardrails may live on feature branches (e.g. `feat/tool-agent-sse-guardrails`) until merged to `main`. For the latest agent endpoints, use the branch named in the submission / PR.
-
-**After merge, confirm OpenAPI includes:**
+Use **`main`** (tool agent merged via PR #11). Confirm OpenAPI includes:
 
 - `POST /agent/query`
 - `POST /agent/query/stream`

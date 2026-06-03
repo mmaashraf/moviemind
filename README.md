@@ -6,38 +6,29 @@ End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, Fast
 
 ---
 
-## Setup and run (read this first)
+## Start here
 
-**Dedicated guide:** [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md)
-
-That file is the single place for:
-
-- what to **clone** and which branch to use  
-- **install** (venv, `requirements.txt`, Ollama when needed)  
-- **what is already in git** (`notebooks/`, `evidence/`) vs **gitignored** `data/` and `models/`  
-- **three paths:** inspect notebooks/evidence only · run the app · optional full reproduction  
-- **~2 min run:** GitHub Release tarball + `scripts/download_review_artifacts.sh` (see §2.4); re-running notebooks does **not** break the app (§2.5)  
-- **build** artifacts when you need the live API/UI and have no release zip  
-- **run** the app and **what is launched** (API on port **8000**, UI on **8502**)  
-- **`bash scripts/restart_moviemind.sh`** (stop old processes, start both)  
-- **verify** pass/fail checklist and troubleshooting  
-
-This README keeps **project context** and **full phase-by-phase replication** for developers and reviewers who need implementation depth.
-
----
-
-## Repository
+| I want to… | Open |
+|------------|------|
+| **Run the app** (install, build, verify) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) |
+| **~2 min run** (release tarball + download script) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 |
+| **Reproduce training** (notebooks + script order) | [`REPLICATION.md`](REPLICATION.md) |
+| **Tool agent / SSE** | [`TOOL_AGENT_WIKI.md`](TOOL_AGENT_WIKI.md) |
+| **UI ↔ API** | [`WEBAPP_AGENT_WIKI.md`](WEBAPP_AGENT_WIKI.md) |
+| **Ollama / local LLM** | [`LOCAL_LLM_WIKI.md`](LOCAL_LLM_WIKI.md) |
+| **Metrics & plots already run** | `evidence/phase9_split_eval/`, `evidence/phase6/` |
+| **Phase checklist (author)** | [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md) |
 
 ```bash
-git clone git@github.com:mmaashraf/moviemind.git
+git clone https://github.com/mmaashraf/moviemind.git
 cd moviemind
 ```
 
-HTTPS: `git clone https://github.com/mmaashraf/moviemind.git`
+SSH: `git clone git@github.com:mmaashraf/moviemind.git`
 
 ---
 
-## What runs when you “start the app”
+## What runs when you start the app
 
 | Process | Technology | Default URL |
 |---------|------------|-------------|
@@ -45,224 +36,82 @@ HTTPS: `git clone https://github.com/mmaashraf/moviemind.git`
 | **Frontend (UI)** | `streamlit run app/streamlit_app.py` | http://127.0.0.1:8502 |
 
 The UI calls the API at `MOVIEMIND_API_URL` (default `http://127.0.0.1:8000`).  
-**Ollama** (`http://127.0.0.1:11434`) is separate — only for **Local LLM** parse and the **tool agent**, not for Manual recommend.
+**Ollama** (`http://127.0.0.1:11434`) is only for **Local LLM** parse and the **tool agent**, not for Manual recommend.
 
-Quick start: [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §4–6.
+Quick start: `bash scripts/restart_moviemind.sh` after artifacts exist — see [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §4–6.
 
 ---
 
-## Current project status
+## Project status (summary)
 
 | Phase | Status | Notes |
 |-------|--------|--------|
-| 1 Setup | Done | Repo layout, data loader |
-| 2 EDA | Done | Notebooks under `notebooks/` |
-| 3 Features | Done | `data/processed/*.csv` |
-| 4 ML | Done | Best: Gradient Boosting RMSE ~0.897 |
-| 5 DL | Done | NCF baseline; GB still better |
-| 5b Optuna | Done | 50 trials; tuned DL RMSE ~1.006 |
-| 6 Post-analysis | Done | PCA, feature importance; t-SNE optional |
+| 1–6 | Done | Data → features → ML/DL → post-analysis |
 | 7 API | Done | FastAPI + model registry |
-| 8 UI + NLP | Done | Streamlit; `/nlp/query` (`local-llm`, `api-llm`) |
-| 8x Tool agent | Done on feature branch | `/agent/query`, SSE; see `PROGRESS_TRACKER.md` |
+| 8 UI + NLP | Done | `local-llm`, `api-llm` |
+| 8x Tool agent | Done | `/agent/query`, `/agent/query/stream` (SSE) |
 
 Detail: [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md)
 
 ---
 
-## Architecture and features
+## Architecture (short)
 
-- **Data:** MovieLens 1M with user demographics (age, gender, occupation).
-- **Models (registry):** `baseline_global_mean`, `linear_regression`, `random_forest`, `gradient_boosting`, `ncf_baseline`, `ncf_tuned` — availability depends on files under `models/`.
-- **API:** Unified `ModelRegistry` for predict, recommend, user summary, NLP parse, tool agent.
-- **UI:** Streamlit tabs — Recommend, Model Inspector, Embedding Space, Model Visualizers, Lifecycle Evidence, AI Concepts, Ollama monitor, System.
-- **XAI / analysis:** GB feature importance, user embedding PCA (`evidence/phase6/`).
-- **Diversity:** `diversity_alpha` on `/recommend` and agent tool `get_recommendations`.
+- **Data:** MovieLens 1M + user demographics.
+- **Models:** `baseline_global_mean`, sklearn regressors, NCF baseline/tuned — see `/models` when artifacts exist.
+- **API:** predict, recommend, user summary, NLP parse, multi-step tool agent.
+- **UI:** Recommend, inspectors, embeddings, evidence browser, Ollama monitor, system status.
+- **Best eval:** Gradient Boosting; diversity via `diversity_alpha` on recommend + agent tools.
 
 ---
 
-## API endpoints (accurate as of Phase 8x branch)
+## API endpoints
 
 | Method | Path | Notes |
 |--------|------|--------|
 | GET | `/health` | Liveness |
-| GET | `/models` | Includes `available` per artifact |
-| GET | `/models/{model_id}/info` | Inspector payload |
-| GET | `/users/{user_id}/summary` | **404** if user id out of range |
+| GET | `/models` | `available` per artifact |
+| GET | `/models/{model_id}/info` | Inspector |
+| GET | `/users/{user_id}/summary` | **404** if user out of range |
 | POST | `/predict` | Single rating |
-| POST | `/recommend` | Top-N list |
-| POST | `/nlp/query` | `runtime_mode`: **`local-llm`** or **`api-llm`** only |
-| POST | `/agent/query` | Multi-step tool agent (JSON) — **Phase 8x branch** |
-| POST | `/agent/query/stream` | Same agent, SSE — **Phase 8x branch** |
+| POST | `/recommend` | Top-N |
+| POST | `/nlp/query` | `local-llm` or `api-llm` |
+| POST | `/agent/query` | Tool agent (JSON) |
+| POST | `/agent/query/stream` | Tool agent (SSE) |
 
-Docs: http://127.0.0.1:8000/docs
-
-**NLP runtime modes (API):**
-
-- **`local-llm`** — Ollama `/api/generate`; returns **503** if Ollama is down (no silent rule fallback).
-- **`api-llm`** — guarded fallback unless `MOVIEMIND_API_LLM_ENABLED` is set.
-
-**UI Recommend modes:**
-
-- **Manual** — no Ollama; uses `/recommend` directly.
-- **Agent (NLP)** + **Parse Query** — `/nlp/query` with Local LLM or API LLM.
-- **Multi-step tool agent** — `/agent/query` or `/agent/query/stream`; always Ollama; independent of NLP runtime dropdown.
+Interactive docs: http://127.0.0.1:8000/docs
 
 ---
 
-## Full replication by phase (implementation)
-
-Run from **`moviemind/`** with venv active.  
-`data/` and `models/` are **gitignored** — generate locally.
-
-### 0) Environment
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-### 1) Data
-
-```bash
-python3 src/data_loader.py
-```
-
-Expected: `data/ml-1m/ratings.dat`, `movies.dat`, `users.dat`
-
-### 2) EDA (optional for run-only reviewers)
-
-- `notebooks/01_eda.ipynb`
-- `notebooks/02_long_tail_and_cold_start.ipynb`
-
-### 3) Features
-
-```bash
-python3 src/features.py
-```
-
-Expected: `data/processed/train_features.csv`, `test_features.csv`, `val_features.csv`
-
-### 4) ML models
-
-```bash
-python3 src/ml_models.py
-```
-
-Expected: `models/*.pkl`, `models/ml_training_log.txt`  
-Sklearn saves use **pickle protocol 4** (`save_sklearn_estimator` in `src/ml_models.py`).
-
-### 5) DL baseline
-
-```bash
-python3 src/dl_model.py
-```
-
-Expected: `models/ncf_model.pt`, `models/dl_training_log.txt`
-
-### 5b) DL tuning (Optuna)
-
-```bash
-python3 src/tune_dl.py
-```
-
-Expected: `models/best_dl_params.txt`, `models/tune_dl_log.txt`
-
-### 6) Post-analysis
-
-```bash
-python3 src/post_analysis.py
-```
-
-Optional t-SNE: `MOVIEMIND_ENABLE_TSNE=1 python3 src/post_analysis.py`  
-Expected: `models/ncf_tuned_best.pt`, artifacts under `evidence/phase6/`
-
-### 6.1) One-shot build script
-
-```bash
-python3 scripts/build_model_artifacts.py all --skip-tune-dl
-```
-
-Commands: `features`, `ml`, `dl`, `tune-dl`, `post`, `all`. See `python3 scripts/build_model_artifacts.py --help`.
-
-Tests:
-
-```bash
-python3 -m unittest discover -s tests -p "test_*.py" -v
-```
-
-### 7) API
-
-```bash
-uvicorn src.api.app:app --host 127.0.0.1 --port 8000
-```
-
-Or: `bash scripts/restart_moviemind.sh`
-
-### 8) UI
-
-```bash
-streamlit run app/streamlit_app.py --server.port 8502
-```
-
-Ollama setup: `bash scripts/setup_local_ollama.sh`  
-Local LLM smoke: `bash scripts/test_local_llm.sh` (needs API running)
-
----
-
-## Scripts (helper)
+## Helper scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/restart_moviemind.sh` | Kill listeners on 8000/8502; start API + UI |
-| `scripts/setup_local_ollama.sh` | Install/start Ollama; pull default model |
-| `scripts/test_local_llm.sh` | API health + NLP smoke → `evidence/phase8/` |
-| `scripts/build_model_artifacts.py` | Chain training phases |
+| `scripts/restart_moviemind.sh` | Start API + UI |
+| `scripts/build_model_artifacts.py` | Chain training phases — see [`REPLICATION.md`](REPLICATION.md) |
+| `scripts/download_review_artifacts.sh` | Pull pre-built `data/` + `models/` from a release URL |
+| `scripts/pack_review_artifacts.sh` | Create tarball for GitHub Release |
+| `scripts/setup_local_ollama.sh` | Ollama install + default model |
+| `scripts/test_local_llm.sh` | API + NLP smoke |
 
 ---
 
-## Evidence map
+## Evidence (committed outputs)
 
-- `evidence/phase5b/` — DL tuning notes  
-- `evidence/phase6/` — post-analysis, embeddings, plots  
-- `evidence/phase7/` — API smoke logs  
-- `evidence/phase8/` — UI/NLP smoke  
-- `evidence/phase9_split_eval/` — 70/10/20 eval summaries  
-- `evidence/runtime/` — API/UI logs from restart script  
+- `evidence/phase5b/` — DL tuning  
+- `evidence/phase6/` — post-analysis  
+- `evidence/phase7/` — API smoke  
+- `evidence/phase8/` — UI/NLP + screenshots  
+- `evidence/phase9_split_eval/` — split eval summaries  
 
----
-
-## Documentation index
-
-| Document | Audience |
-|----------|----------|
-| **`REVIEWER_SETUP.md`** | Clone → install → build → run → verify |
-| `TOOL_AGENT_WIKI.md` | Tool agent, SSE, env vars, prompts |
-| `WEBAPP_AGENT_WIKI.md` | UI ↔ API contracts |
-| `LOCAL_LLM_WIKI.md` | Ollama NLP path (update if API modes change) |
-| `PROGRESS_TRACKER.md` | Phase checklist |
-| `CONTEXT_HANDOVER.md` | Handoff narrative |
-| `AI_CONCEPTS_WIKI.md` | Course concepts |
+Index: [`evidence/README.md`](evidence/README.md)
 
 ---
 
-## Reproducibility rules (project)
+## Replication and maintenance
 
-1. Modular layout: `src/`, `data/`, `models/`, `notebooks/`.  
-2. Log training to console and `models/*.txt` logs.  
-3. Time-based splits — no random leakage for the main pipeline.  
-4. Capture evidence under `evidence/<phase>/` per milestone.  
-5. Keep `PROGRESS_TRACKER.md`, `CONTEXT_HANDOVER.md`, `AI_CONCEPTS_WIKI.md` in sync when phases change.
+- **Commands and notebook order:** [`REPLICATION.md`](REPLICATION.md) only (do not duplicate in this file).
+- **Setup/run changes:** update [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
+- **Phase milestones:** update [`PROGRESS_TRACKER.md`](PROGRESS_TRACKER.md).
 
----
-
-## Milestone update protocol
-
-After a major phase:
-
-1. Save outputs in `evidence/<phase>/`.  
-2. Update `PROGRESS_TRACKER.md`.  
-3. Update `CONTEXT_HANDOVER.md`.  
-4. Update `AI_CONCEPTS_WIKI.md` if theory changed.  
-5. Update **`REVIEWER_SETUP.md`** if setup/run steps changed; update this README if replication commands changed.
+Planned doc cleanup: consolidate wikis under `docs/` and move author-only files to `docs/internal/`.
