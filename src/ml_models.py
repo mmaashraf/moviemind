@@ -1,9 +1,10 @@
-import pandas as pd
-import numpy as np
-import joblib
 import os
+import pickle
 import sys
 import time
+
+import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
@@ -26,7 +27,23 @@ FEATURE_COLS = [
     'release_year',
 ]
 
-TARGET_COL = 'rating'
+TARGET_COL = "rating"
+
+# joblib + numpy on some Python 3.13 builds can fail when pickling large tree state
+# (AttributeError: module 'pickle' has no attribute 'PickleBuffer' with protocol 5).
+# Protocol 4 via stdlib pickle avoids that path; joblib.load still loads these files.
+def save_sklearn_estimator(
+    model,
+    filename: str,
+    *,
+    models_dir: str | None = None,
+) -> str:
+    base = models_dir if models_dir is not None else MODELS_DIR
+    path = os.path.join(base, filename)
+    os.makedirs(base, exist_ok=True)
+    with open(path, "wb") as f:
+        pickle.dump(model, f, protocol=4)
+    return path
 
 
 def load_processed_data():
@@ -67,9 +84,7 @@ def train_linear_regression(X_train, y_train, X_test, y_test):
     y_pred = model.predict(X_test)
     duration = time.time() - start_time
 
-    # Save model
-    os.makedirs(MODELS_DIR, exist_ok=True)
-    joblib.dump(model, os.path.join(MODELS_DIR, 'linear_regression.pkl'))
+    save_sklearn_estimator(model, "linear_regression.pkl")
 
     res = evaluate_model(y_test, y_pred, model_name="Linear Regression")
     res['time_sec'] = round(duration, 2)
@@ -91,8 +106,7 @@ def train_random_forest(X_train, y_train, X_test, y_test):
     y_pred = model.predict(X_test)
     duration = time.time() - start_time
 
-    os.makedirs(MODELS_DIR, exist_ok=True)
-    joblib.dump(model, os.path.join(MODELS_DIR, 'random_forest.pkl'))
+    save_sklearn_estimator(model, "random_forest.pkl")
 
     res = evaluate_model(y_test, y_pred, model_name="Random Forest")
     res['time_sec'] = round(duration, 2)
@@ -113,8 +127,7 @@ def train_gradient_boosting(X_train, y_train, X_test, y_test):
     y_pred = model.predict(X_test)
     duration = time.time() - start_time
 
-    os.makedirs(MODELS_DIR, exist_ok=True)
-    joblib.dump(model, os.path.join(MODELS_DIR, 'gradient_boosting.pkl'))
+    save_sklearn_estimator(model, "gradient_boosting.pkl")
 
     res = evaluate_model(y_test, y_pred, model_name="Gradient Boosting")
     res['time_sec'] = round(duration, 2)

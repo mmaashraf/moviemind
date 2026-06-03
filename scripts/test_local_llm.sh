@@ -47,10 +47,10 @@ run_check() {
   echo
 
   run_check "1) Health check" "GET" "${API_URL}/health"
-  run_check "2) Local LLM parse (should be local-llm-ollama if Ollama is up, else fallback)" "POST" "${API_URL}/nlp/query" \
+  run_check "2) Local LLM parse (local-llm-ollama if Ollama is up; else HTTP 503)" "POST" "${API_URL}/nlp/query" \
     '{"query":"top 5 action movies for user 10 with tuned model","runtime_mode":"local-llm"}'
-  run_check "3) Rule-only parse (control check)" "POST" "${API_URL}/nlp/query" \
-    '{"query":"top 5 action movies for user 10 with tuned model","runtime_mode":"rule-only"}'
+  run_check "3) API LLM parse (fallback unless MOVIEMIND_API_LLM_ENABLED)" "POST" "${API_URL}/nlp/query" \
+    '{"query":"top 5 action movies for user 10 with tuned model","runtime_mode":"api-llm"}'
 } | tee "${OUT_FILE}"
 
 echo "[MovieMind] Smoke test output saved to ${OUT_FILE}"

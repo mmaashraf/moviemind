@@ -1,5 +1,7 @@
 # MovieMind WebApp-Agent Wiki
 
+**Reviewers:** use [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) for clone → build → run → checklist.
+
 ## 1) System Architecture
 
 MovieMind Phase 7-8 uses a backend-plus-frontend split:
@@ -77,6 +79,10 @@ High-level runtime flow:
 ### `POST /agent/query/stream` (tool agent, SSE)
 - Purpose: Same body as **`/agent/query`**; response **`text/event-stream`** with JSON events (`assistant`, `tool`, `done`, optional `error`) so UIs can update **between** Ollama round-trips.
 - Ollama itself is still called with **`stream: false`** per round for reliable **`tool_calls`**; SSE is FastAPI **`StreamingResponse`** around **`iter_tool_agent_events`** — see **`TOOL_AGENT_WIKI.md`** § streaming.
+
+## 2b) Ollama monitor tab (Streamlit)
+
+The **Ollama** tab calls the local daemon’s HTTP API from the **Streamlit server** using `MOVIEMIND_OLLAMA_URL` (defaults to `http://127.0.0.1:11434`). It shows `/api/version`, `/api/tags`, and `/api/ps`, plus relevant env vars. Click **Refresh** to update the snapshot without hammering Ollama on every Streamlit rerun.
 
 ## 3) Runtime Modes and Usage Guidance
 

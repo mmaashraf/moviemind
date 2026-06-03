@@ -29,6 +29,22 @@ st.set_page_config(page_title="MovieMind", page_icon="🎬", layout="wide")
 
 API_BASE_URL = os.environ.get("MOVIEMIND_API_URL", "http://127.0.0.1:8000")
 EVIDENCE_DIR = PROJECT_ROOT / "evidence"
+
+
+def _ollama_base_url() -> str:
+    """Ollama daemon base URL (same default as API `MOVIEMIND_OLLAMA_URL`)."""
+    return os.environ.get("MOVIEMIND_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
+
+
+def _ollama_get_json(path: str, *, timeout_sec: float = 8.0) -> Dict[str, Any]:
+    """GET Ollama REST path (e.g. `/api/tags`) from the Streamlit server process."""
+    url = f"{_ollama_base_url()}{path}"
+    try:
+        resp = requests.get(url, timeout=timeout_sec)
+        resp.raise_for_status()
+        return {"ok": True, "data": resp.json(), "status_code": resp.status_code}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc), "url": url}
 RUNTIME_OPTIONS = {
     "Local LLM": "local-llm",
     "API LLM": "api-llm",
@@ -995,6 +1011,71 @@ def inspector_page(models: List[Dict[str, Any]]) -> None:
     st.json(info.get("params", {}))
 
 
+def ollama_monitor_page() -> None:
+    st.subheader("Ollama monitor")
+    st.caption(
+        "Probes the **Ollama HTTP API** from this Streamlit process using **`MOVIEMIND_OLLAMA_URL`**. "
+        "Use it wherever the UI runs to see tags, loaded models, and basic health. "
+        "For setup details see **`LOCAL_LLM_WIKI.md`**."
+    )
+    base = _ollama_base_url()
+    st.code(base, language="text")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        refresh = st.button("Refresh Ollama snapshot", key="ollama_refresh")
+    with c2:
+        st.caption("Tip: run `ollama ps` in a terminal for a quick CLI view of loaded models.")
+
+    env_rows = {
+        "MOVIEMIND_OLLAMA_URL": os.environ.get("MOVIEMIND_OLLAMA_URL", "(default 127.0.0.1:11434)"),
+        "MOVIEMIND_OLLAMA_MODEL": os.environ.get("MOVIEMIND_OLLAMA_MODEL", "(default llama3.1:8b)"),
+        "MOVIEMIND_OLLAMA_TIMEOUT_SEC": os.environ.get("MOVIEMIND_OLLAMA_TIMEOUT_SEC", "(see API)"),
+        "MOVIEMIND_AGENT_TIMEOUT_SEC": os.environ.get("MOVIEMIND_AGENT_TIMEOUT_SEC", "(optional)"),
+        "MOVIEMIND_OLLAMA_READ_RETRIES": os.environ.get("MOVIEMIND_OLLAMA_READ_RETRIES", "(default 2)"),
+        "MOVIEMIND_AGENT_PSEUDO_TOOL_RETRIES": os.environ.get("MOVIEMIND_AGENT_PSEUDO_TOOL_RETRIES", "(default 2)"),
+    }
+    with st.expander("MovieMind ↔ Ollama env (this process)", expanded=False):
+        st.json(env_rows)
+
+    snap_key = "ollama_monitor_snapshot"
+    if refresh or snap_key not in st.session_state:
+        st.session_state[snap_key] = {
+            "base": base,
+            "version": _ollama_get_json("/api/version", timeout_sec=5.0),
+            "tags": _ollama_get_json("/api/tags", timeout_sec=20.0),
+            "ps": _ollama_get_json("/api/ps", timeout_sec=8.0),
+        }
+    snap = st.session_state[snap_key]
+    if snap.get("base") != base:
+        st.warning("Base URL changed since last snapshot; click **Refresh**.")
+    st.caption("Snapshot updates when you click **Refresh** (or on first open).")
+
+    st.markdown("### `/api/version`")
+    ver = snap["version"]
+    if ver["ok"]:
+        st.success("Reachable")
+        st.json(ver["data"])
+    else:
+        st.error(f"Unreachable: {ver.get('error')}")
+
+    st.markdown("### `/api/tags` (installed models)")
+    tags = snap["tags"]
+    if tags["ok"]:
+        models = tags["data"].get("models") or []
+        st.metric("Model manifests", len(models))
+        st.json(tags["data"])
+    else:
+        st.warning(tags.get("error", "tags failed"))
+
+    st.markdown("### `/api/ps` (loaded / in-memory)")
+    ps = snap["ps"]
+    if ps["ok"]:
+        st.json(ps["data"])
+    else:
+        st.info(f"`/api/ps` not available or failed: {ps.get('error')}")
+
+
 def system_page() -> None:
     st.subheader("System")
     health = safe_api_get("/health")
@@ -1593,7 +1674,7 @@ Why this matters:
 def main() -> None:
     render_header()
     models = load_models()
-    tab_reco, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_system = st.tabs(
+    tab_reco, tab_inspect, tab_embed, tab_visual, tab_evidence, tab_concepts, tab_ollama, tab_system = st.tabs(
         [
             "Recommend",
             "Model Inspector",
@@ -1601,6 +1682,7 @@ def main() -> None:
             "Model Visualizers",
             "Lifecycle Evidence",
             "AI Concepts",
+            "Ollama",
             "System",
         ]
     )
@@ -1616,6 +1698,8 @@ def main() -> None:
         lifecycle_evidence_page()
     with tab_concepts:
         ai_concepts_page()
+    with tab_ollama:
+        ollama_monitor_page()
     with tab_system:
         system_page()
 

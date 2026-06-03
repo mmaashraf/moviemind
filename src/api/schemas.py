@@ -87,7 +87,7 @@ class RecommendResponse(BaseModel):
 
 class NLPQueryRequest(BaseModel):
     query: str = Field(..., min_length=3)
-    runtime_mode: str = Field("rule-only", pattern="^(rule-only|local-llm|api-llm)$")
+    runtime_mode: str = Field("local-llm", pattern="^(local-llm|api-llm)$")
 
 
 class NLPQueryResponse(BaseModel):
@@ -98,4 +98,20 @@ class NLPQueryResponse(BaseModel):
     filters: Dict[str, Any] = Field(default_factory=dict)
     model_hint: Optional[str] = None
     explanation: str
+
+
+class AgentQueryRequest(BaseModel):
+    query: str = Field(..., min_length=3)
+    max_turns: int = Field(8, ge=1, le=24)
+
+
+class AgentQueryResponse(BaseModel):
+    """Multi-step Ollama tool agent: chains list_models / user_summary / recommendations."""
+
+    final_message: str
+    recommendations: Optional[List[Dict[str, Any]]] = None
+    trace: List[Dict[str, Any]] = Field(default_factory=list)
+    turns_used: int = 0
+    model: Optional[str] = None
+    error: Optional[str] = None
 
