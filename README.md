@@ -93,6 +93,8 @@ Interactive docs: http://127.0.0.1:8000/docs
 | Script | Purpose |
 |--------|---------|
 | `scripts/restart_moviemind.sh` | Start API + UI |
+| `scripts/stop_moviemind.sh` | Stop API + UI — see [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
+| `scripts/verify_local_app.sh` | Health check for :8000 / :8502 |
 | `scripts/build_model_artifacts.py` | Chain training phases — see [`REPLICATION.md`](REPLICATION.md) |
 | `scripts/download_review_artifacts.sh` | Pull pre-built `data/` + `models/` — see [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
 | `scripts/pack_review_artifacts.sh` | Create tarball for GitHub Release |

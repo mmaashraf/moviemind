@@ -328,10 +328,14 @@ bash scripts/restart_moviemind.sh --with-ollama
 Other flags:
 
 ```bash
-bash scripts/restart_moviemind.sh --stop-only    # kill API + UI only
+bash scripts/stop_moviemind.sh                       # stop API + UI only
+bash scripts/restart_moviemind.sh --stop-only          # same as above
 bash scripts/restart_moviemind.sh --start-only   # start without killing first
 bash scripts/restart_moviemind.sh --foreground   # API in background, Streamlit in terminal
+bash scripts/verify_local_app.sh                 # check :8000 / :8502 after start
 ```
+
+Details: [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) (`stop_moviemind.sh`, `verify_local_app.sh`).
 
 After start:
 

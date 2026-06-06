@@ -5,6 +5,7 @@
 # Usage (from anywhere):
 #   bash scripts/restart_moviemind.sh
 #   bash scripts/restart_moviemind.sh --stop-only
+#   bash scripts/stop_moviemind.sh              # same as --stop-only
 #   bash scripts/restart_moviemind.sh --start-only
 #   bash scripts/restart_moviemind.sh --with-ollama    # also ensure Ollama is up
 #   bash scripts/restart_moviemind.sh --foreground   # API+UI in foreground (Ctrl+C stops both)
