@@ -103,6 +103,10 @@ class NLPQueryResponse(BaseModel):
 class AgentQueryRequest(BaseModel):
     query: str = Field(..., min_length=3)
     max_turns: int = Field(8, ge=1, le=24)
+    user_id: Optional[int] = Field(None, ge=1)
+    model_id: Optional[str] = None
+    top_n: Optional[int] = Field(None, ge=1, le=100)
+    stop_after_recommendations: bool = True
 
 
 class AgentQueryResponse(BaseModel):

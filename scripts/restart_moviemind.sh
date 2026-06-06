@@ -28,7 +28,7 @@ UI_URL="http://127.0.0.1:${UI_PORT}"
 LOG_DIR="${ROOT}/evidence/runtime"
 API_PID_FILE="${LOG_DIR}/moviemind_api.pid"
 UI_PID_FILE="${LOG_DIR}/moviemind_ui.pid"
-RELOAD="${MOVIEMIND_UVICORN_RELOAD:-1}"
+RELOAD="${MOVIEMIND_UVICORN_RELOAD:-0}"
 
 DO_STOP=1
 DO_START=1
@@ -136,6 +136,7 @@ start_api() {
     nohup uvicorn src.api.app:app --host "${API_HOST}" --port "${API_PORT}" \
       >"${LOG_DIR}/api.log" 2>&1 &
   fi
+  disown 2>/dev/null || true
   echo $! >"${API_PID_FILE}"
   log "API pid $(cat "${API_PID_FILE}") — log: ${LOG_DIR}/api.log"
 }
@@ -147,6 +148,7 @@ start_ui() {
     --server.address 127.0.0.1 \
     --server.headless true \
     >"${LOG_DIR}/ui.log" 2>&1 &
+  disown 2>/dev/null || true
   echo $! >"${UI_PID_FILE}"
   log "UI pid $(cat "${UI_PID_FILE}") — log: ${LOG_DIR}/ui.log"
 }

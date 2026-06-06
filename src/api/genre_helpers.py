@@ -124,6 +124,51 @@ def movie_matches_genre_tokens(movie_genres: Any, expanded_tokens: List[str]) ->
     return bool(tags & set(expanded_tokens))
 
 
+def genre_tokens_from_exclude_args(arguments: Dict[str, Any]) -> tuple[List[str], List[str]]:
+    """
+    Build expanded canonical genre tokens from get_recommendations exclude arguments.
+
+    Supports:
+      - genre_exclude: ["action", "drama"] or comma-separated string
+    """
+    chunks: List[str] = []
+    raw_exclude = arguments.get("genre_exclude")
+    if isinstance(raw_exclude, list):
+        for x in raw_exclude:
+            s = str(x).strip()
+            if s:
+                chunks.append(s)
+    elif isinstance(raw_exclude, str) and raw_exclude.strip():
+        chunks.extend(split_genre_phrase(raw_exclude))
+
+    expanded: List[str] = []
+    unknown: List[str] = []
+    seen: Set[str] = set()
+    for chunk in chunks:
+        ex = expand_genre_token(chunk)
+        if ex:
+            for tok in ex:
+                if tok not in seen:
+                    seen.add(tok)
+                    expanded.append(tok)
+            continue
+        low = chunk.strip().lower()
+        if low in _CANON and low not in seen:
+            seen.add(low)
+            expanded.append(low)
+        elif low:
+            unknown.append(low)
+    unknown = list(dict.fromkeys(unknown))
+    return expanded, unknown
+
+
+def movie_excludes_genre_tokens(movie_genres: Any, excluded_tokens: List[str]) -> bool:
+    """Row kept when none of the excluded canonical tokens appear in its genre pipe-string."""
+    if not excluded_tokens:
+        return True
+    return not movie_matches_genre_tokens(movie_genres, excluded_tokens)
+
+
 def fetch_size_for_genre_filter(requested_top_n: int, has_filter: bool) -> int:
     """Fetch extra scored rows before OR-filtering so enough survive."""
     if not has_filter:

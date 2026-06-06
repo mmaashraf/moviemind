@@ -202,12 +202,22 @@ def agent_query(payload: AgentQueryRequest) -> AgentQueryResponse:
     Suitable foundation for richer flows (onboarding) later.
     """
     logger.info(
-        "agent_query called query_preview=%s max_turns=%s",
+        "agent_query called query_preview=%s max_turns=%s user_id=%s model_id=%s",
         payload.query[:80].replace("\n", " "),
         payload.max_turns,
+        payload.user_id,
+        payload.model_id,
     )
     try:
-        result = run_tool_agent(registry, payload.query, max_turns=payload.max_turns)
+        result = run_tool_agent(
+            registry,
+            payload.query,
+            max_turns=payload.max_turns,
+            user_id=payload.user_id,
+            model_id=payload.model_id,
+            top_n=payload.top_n,
+            stop_after_recommendations=payload.stop_after_recommendations,
+        )
     except LocalLLMUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc.message)) from exc
     return AgentQueryResponse(
@@ -234,7 +244,15 @@ def agent_query_stream(payload: AgentQueryRequest) -> StreamingResponse:
             payload.max_turns,
         )
         try:
-            for ev in iter_tool_agent_events(registry, payload.query, max_turns=payload.max_turns):
+            for ev in iter_tool_agent_events(
+                registry,
+                payload.query,
+                max_turns=payload.max_turns,
+                user_id=payload.user_id,
+                model_id=payload.model_id,
+                top_n=payload.top_n,
+                stop_after_recommendations=payload.stop_after_recommendations,
+            ):
                 yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
         except LocalLLMUnavailableError as exc:
             err = {"event": "error", "detail": exc.message}

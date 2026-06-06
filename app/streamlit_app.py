@@ -651,6 +651,14 @@ Helpful env vars for Local LLM:
             agent_max_turns = int(
                 st.slider("Agent max turns", min_value=4, max_value=16, value=8, help="Caps LLM↔tool iterations.")
             )
+            stop_after_first_recs = st.checkbox(
+                "Stop after first recommendations",
+                value=False,
+                help=(
+                    "Off (default): run queued multi-step plans (e.g. horror → mystery → …) and merge all rec lists. "
+                    "On: finish right after the first get_recommendations tool."
+                ),
+            )
             stream_agent_sse = st.checkbox(
                 "Stream agent steps (SSE)",
                 value=True,
@@ -660,8 +668,10 @@ Helpful env vars for Local LLM:
                 ),
             )
             st.caption(
-                "**Tool agent** always uses the local Ollama service for `/agent/query` (independent of **NLP Runtime** above, which only applies to quick **Parse Query**). "
-                "The **Diversity** slider applies to **Manual** `Get Recommendations` only; for the tool agent, mention variety in your request (e.g. “diverse genres”) so the model may set **`diversity_alpha`** on `get_recommendations` — same field as the API."
+                "**Tool agent** uses **User ID**, **Model**, and **Top N** from above (passed to the API). "
+                "It always uses local Ollama for `/agent/query` (independent of **NLP Runtime**). "
+                "For variety, mention it in your request so the model may set **`diversity_alpha`** on `get_recommendations`. "
+                "Opposite/unlike requests exclude your top training genres when a taste profile exists."
             )
         auto_recommend = True
         if not use_tool_agent:
@@ -755,7 +765,14 @@ Helpful env vars for Local LLM:
             st.warning("Enter a natural-language request above, then run the agent or parser.")
         elif use_tool_agent:
             agent_timeout = max(300, int(agent_max_turns) * 90)
-            agent_payload = {"query": query.strip(), "max_turns": int(agent_max_turns)}
+            agent_payload = {
+                "query": query.strip(),
+                "max_turns": int(agent_max_turns),
+                "user_id": int(user_id),
+                "model_id": model_map[selected_label],
+                "top_n": int(top_n),
+                "stop_after_recommendations": bool(stop_after_first_recs),
+            }
             adata: Optional[Dict[str, Any]] = None
             agent_result: Optional[Dict[str, Any]] = None
             latency_ms_out: Optional[str] = None
@@ -860,7 +877,7 @@ Helpful env vars for Local LLM:
                 if adata.get("error"):
                     st.warning(adata["error"])
                 st.caption(
-                    f"Turns used: {adata.get('turns_used', 0)} · Ollama model: `{adata.get('model') or '-'}` "
+                    f"Turns used: {adata.get('turns_used', 0)} · Agent model: `{adata.get('model') or '-'}` "
                     f"· Server latency header: {latency_ms_out or '-'} ms"
                 )
                 agent_recs = adata.get("recommendations") or []
@@ -868,6 +885,7 @@ Helpful env vars for Local LLM:
                     st.session_state["last_recommendations"] = agent_recs
                     agent_display = [
                         {
+                            "batch": row.get("recommendation_batch", "-"),
                             "movie_id": row.get("movie_id"),
                             "title": row.get("title"),
                             "genres": row.get("genres"),
@@ -877,6 +895,8 @@ Helpful env vars for Local LLM:
                         for row in agent_recs
                     ]
                     st.dataframe(agent_display, use_container_width=True)
+                elif not (adata.get("final_message") or "").strip():
+                    st.warning("No recommendations returned.")
         else:
             payload = {"query": query, "runtime_mode": RUNTIME_OPTIONS[runtime_label]}
             nlp_timeout = 180 if RUNTIME_OPTIONS[runtime_label] == "local-llm" else 120
