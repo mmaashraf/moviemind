@@ -58,6 +58,7 @@ Generate them locally (§5) or unpack **artifacts from the author** (release zip
 | **Inspect** | Read analysis & evidence without recompute | No | Optional read-only | §2.3 below |
 | **Run app** | Streamlit + FastAPI demo | Yes — **§2.4** download (~2 min) or §5 build | No | **§2.4** + §7 |
 | **Notebooks** | Execute EDA notebooks | Yes — `data/ml-1m/` (in release tarball or `data_loader.py`) | Yes — Tier 1 in [`REPLICATION.md`](REPLICATION.md) | [`REPLICATION.md`](REPLICATION.md) Tier 1 |
+| **Capstone notebook** | Full ML pipeline in one `.ipynb` | Yes — tarball or §5 build | Yes — [`MovieMind_capstone.ipynb`](notebooks/MovieMind_capstone.ipynb) | [`README.md`](README.md) + [`REPLICATION.md`](REPLICATION.md) Tier 1.5 |
 | **Reproduce** | Re-train models | Yes — §5 build or download + rebuild | Optional | [`REPLICATION.md`](REPLICATION.md) Tier 2 |
 
 **Inspect-only example** (no artifact download):

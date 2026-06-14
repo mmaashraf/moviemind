@@ -1,12 +1,13 @@
 # MovieMind replication guide
 
-Single source for **which notebooks to run**, **which scripts in what order**, and how that maps to project phases and `evidence/`.
+**Start here if you haven't set up yet:** [`README.md`](README.md) (clone, venv, artifact download).
 
-- **Run the app only (no training):** [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 + §7.
-- **Notebooks only:** Tier 1 below (after §2.4 download or `data_loader.py`).
-- **Full re-train:** Tier 2 below.
+This file is the **notebook and training order** reference. All commands assume **`moviemind/`** as cwd with venv active. `data/` and `models/` are **gitignored**.
 
-All commands assume you are in the **`moviemind/`** directory with venv active. `data/` and `models/` are **gitignored**.
+- **Run the app:** [`README.md`](README.md) → `restart_moviemind.sh`
+- **Capstone notebook:** Tier 1.5 below
+- **EDA only:** Tier 1
+- **Full re-train:** Tier 2
 
 ---
 
@@ -44,6 +45,32 @@ jupyter lab notebooks/02_long_tail_and_cold_start.ipynb
 ```
 
 Use the **`.venv` Python 3** kernel. Safe while the app is running (§2.5 in `REVIEWER_SETUP.md`).
+
+---
+
+## Tier 1.5 — Capstone submission notebook
+
+**Single notebook** for course submission: data load → EDA → features → ML/DL train → tuning → evaluation. Orchestrates `src/*.py` modules.
+
+| Notebook | Purpose |
+|----------|---------|
+| [`notebooks/MovieMind_capstone.ipynb`](notebooks/MovieMind_capstone.ipynb) | Full pipeline + results (default: skip existing artifacts) |
+
+```bash
+source .venv/bin/activate
+# Interactive:
+jupyter lab notebooks/MovieMind_capstone.ipynb
+
+# Headless verify (fast path):
+bash scripts/verify_capstone_notebook.sh
+
+# Full re-train (hours):
+MOVIEMIND_RUN_FULL=1 MOVIEMIND_SKIP_TUNE_DL=0 jupyter nbconvert --execute notebooks/MovieMind_capstone.ipynb
+```
+
+Regenerate notebook cells from script: `python3 scripts/build_capstone_notebook.py`
+
+**Data needed:** `data/ml-1m/` and (for training sections) `data/processed/` + `models/` — from tarball or Tier 2 pipeline.
 
 ---
 
