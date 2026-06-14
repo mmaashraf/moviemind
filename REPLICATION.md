@@ -1,11 +1,13 @@
 # MovieMind replication guide
 
-Single source for **which notebooks to run**, **which scripts in what order**, and how that maps to project phases and `evidence/`.
+**Start here if you haven't set up yet:** [`README.md`](README.md) (clone, venv, artifact download).
 
-- **Run the app only (no training):** stop at [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §4–6.
-- **Fast artifacts (no local train):** [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) + [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4.
+This file is the **notebook and training order** reference. All commands assume **`moviemind/`** as cwd with venv active. `data/` and `models/` are **gitignored**.
 
-All commands assume you are in the **`moviemind/`** directory with venv active. `data/` and `models/` are **gitignored**.
+- **Run the app:** [`README.md`](README.md) → `restart_moviemind.sh`
+- **Capstone notebook:** Tier 1.5 below
+- **EDA only:** Tier 1
+- **Full re-train:** Tier 2
 
 ---
 
@@ -15,10 +17,10 @@ All commands assume you are in the **`moviemind/`** directory with venv active. 
 |------|---------|---------|
 | 1 | `python3 -m venv .venv && source .venv/bin/activate` | venv |
 | 2 | `pip install -r requirements.txt` | deps |
-| 3a | `python3 src/data_loader.py` | `data/ml-1m/*.dat` |
-| 3b | *or* `bash scripts/download_review_artifacts.sh` | `data/` + `models/` |
-| 4 | `python3 scripts/build_model_artifacts.py features` | `data/processed/*.csv` |
-| 5 | `python3 scripts/build_model_artifacts.py ml` | `models/*.pkl` |
+| 3 | `bash scripts/download_review_artifacts.sh` | `data/` + `models/` (reviewer fast path — see `REVIEWER_SETUP.md` §2.4) |
+| 3alt | `python3 src/data_loader.py` then build steps 4–5 | local train path |
+| 4 | `python3 scripts/build_model_artifacts.py features` | `data/processed/*.csv` (skip if downloaded) |
+| 5 | `python3 scripts/build_model_artifacts.py ml` | `models/*.pkl` (skip if downloaded) |
 | 6 | `bash scripts/restart_moviemind.sh` | API :8000, UI :8502 |
 
 **Smoke-only variant:** step 4 only, then UI model `baseline_global_mean` (see `REVIEWER_SETUP.md` §4.3 Path C).
@@ -34,7 +36,41 @@ These **do not** write to `data/processed/` or `models/`. Re-running them does *
 | 1 | [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb) | Distributions, sparsity, schema checks |
 | 2 | [`notebooks/02_long_tail_and_cold_start.ipynb`](notebooks/02_long_tail_and_cold_start.ipynb) | Long-tail and cold-start narrative |
 
-Requires `data/ml-1m/` from `src/data_loader.py` (step 3a above).
+**Data needed:** `data/ml-1m/` — included in the [release tarball](https://github.com/mmaashraf/moviemind/releases/tag/v1.0-artifacts) (`REVIEWER_SETUP.md` §2.4), or from `python3 src/data_loader.py`.
+
+```bash
+source .venv/bin/activate
+jupyter lab notebooks/01_eda.ipynb
+jupyter lab notebooks/02_long_tail_and_cold_start.ipynb
+```
+
+Use the **`.venv` Python 3** kernel. Safe while the app is running (§2.5 in `REVIEWER_SETUP.md`).
+
+---
+
+## Tier 1.5 — Capstone submission notebook
+
+**Single notebook** for course submission: data load → EDA → features → ML/DL train → tuning → evaluation. Orchestrates `src/*.py` modules.
+
+| Notebook | Purpose |
+|----------|---------|
+| [`notebooks/MovieMind_capstone.ipynb`](notebooks/MovieMind_capstone.ipynb) | Full pipeline + results (default: skip existing artifacts) |
+
+```bash
+source .venv/bin/activate
+# Interactive:
+jupyter lab notebooks/MovieMind_capstone.ipynb
+
+# Headless verify (fast path):
+bash scripts/verify_capstone_notebook.sh
+
+# Full re-train (hours):
+MOVIEMIND_RUN_FULL=1 MOVIEMIND_SKIP_TUNE_DL=0 jupyter nbconvert --execute notebooks/MovieMind_capstone.ipynb
+```
+
+Regenerate notebook cells from script: `python3 scripts/build_capstone_notebook.py`
+
+**Data needed:** `data/ml-1m/` and (for training sections) `data/processed/` + `models/` — from tarball or Tier 2 pipeline.
 
 ---
 

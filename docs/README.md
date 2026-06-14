@@ -4,8 +4,8 @@
 
 | Doc | Audience |
 |-----|----------|
-| [`../README.md`](../README.md) | Navigation hub |
-| [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) | Clone → run → verify |
+| [`../README.md`](../README.md) | **Start here** — three paths: run app / browse / reproduce |
+| [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) | Clone → artifacts → run app → verify |
 | [`../REPLICATION.md`](../REPLICATION.md) | Notebooks + training script order |
 
 ## Product / reviewer depth

@@ -53,26 +53,36 @@ Generate them locally (§5) or unpack **artifacts from the author** (release zip
 
 ### 2.3 Three reviewer paths
 
-| Path | Goal | Build `data/` + `models/`? | Run notebooks? |
-|------|------|----------------------------|----------------|
-| **Inspect** | Trust the analysis without recompute | No | No — use committed `evidence/` and notebook source |
-| **Run app** | Streamlit + FastAPI demo | Yes — §5.2 + §5.3 Path A or C (or author zip) | No |
-| **Reproduce** | Re-train and refresh evidence | Yes — §5.3 Path B + README phase steps | Yes — optional, in order |
+| Path | Goal | Need `data/` + `models/`? | Run notebooks? | Guide |
+|------|------|---------------------------|----------------|--------|
+| **Inspect** | Read analysis & evidence without recompute | No | Optional read-only | §2.3 below |
+| **Run app** | Streamlit + FastAPI demo | Yes — **§2.4** download (~2 min) or §5 build | No | **§2.4** + §7 |
+| **Notebooks** | Execute EDA notebooks | Yes — `data/ml-1m/` (in release tarball or `data_loader.py`) | Yes — Tier 1 in [`REPLICATION.md`](REPLICATION.md) | [`REPLICATION.md`](REPLICATION.md) Tier 1 |
+| **Capstone notebook** | Full ML pipeline in one `.ipynb` | Yes — tarball or §5 build | Yes — [`MovieMind_capstone.ipynb`](notebooks/MovieMind_capstone.ipynb) | [`README.md`](README.md) + [`REPLICATION.md`](REPLICATION.md) Tier 1.5 |
+| **Reproduce** | Re-train models | Yes — §5 build or download + rebuild | Optional | [`REPLICATION.md`](REPLICATION.md) Tier 2 |
 
-**Inspect-only example:**
+**Inspect-only example** (no artifact download):
 
 ```bash
 git clone https://github.com/mmaashraf/moviemind.git
 cd moviemind
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt   # only if you want to execute notebook cells
-jupyter lab notebooks/01_eda.ipynb  # optional
+# Browse notebooks in Jupyter/VS Code (read cells) and evidence/ — no pip required for read-only
 ls evidence/phase6 evidence/phase9_split_eval
 ```
 
-**Run-app example:** same clone + venv, then §5.2–5.3 + §7 (artifacts or build, then `restart_moviemind.sh`).
+**Run-app example:** clone + venv + **§2.4** download → **§7** `restart_moviemind.sh` → **§8** checklist.
 
-**Reproduce example:** run notebooks, then `python3 scripts/build_model_artifacts.py all --skip-tune-dl` (or phase-by-phase commands in [`README.md`](README.md)).
+**Notebooks example** (after §2.4 download or `python3 src/data_loader.py`):
+
+```bash
+source .venv/bin/activate
+jupyter lab notebooks/01_eda.ipynb
+jupyter lab notebooks/02_long_tail_and_cold_start.ipynb
+```
+
+Select the **`.venv` Python 3** kernel if prompted. Notebooks are read-only for `data/ml-1m/` — they do not change app artifacts (§2.5).
+
+**Reproduce example:** [`REPLICATION.md`](REPLICATION.md) Tier 1 notebooks (optional), then `python3 scripts/build_model_artifacts.py all --skip-tune-dl`.
 
 ### 2.4 Clone and run in ~2 minutes (pre-built artifacts)
 
@@ -93,14 +103,18 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
 bash scripts/download_review_artifacts.sh
+python -m unittest discover -s tests -q
 bash scripts/restart_moviemind.sh
+bash scripts/verify_local_app.sh
 ```
 
 Then open http://127.0.0.1:8502 (API on :8000). First `pip install` may take several minutes (PyTorch). First API start may take up to ~90s while data loads.
 
+The tarball includes **`data/ml-1m/`** (for notebooks) and **`data/processed/`** + **`models/`** (for the app). See [`REPLICATION.md`](REPLICATION.md) Tier 1 to run notebooks after this step.
+
 **Private repo:** add `export MOVIEMIND_GITHUB_TOKEN="ghp_..."` before download — see §3.
 
-Without a release URL, use §5.2–5.3 (15–45 min minimum build).
+Without a release URL, use §5.2–5.3 (15–45 min minimum build), then §7.
 
 ### 2.5 Will re-running notebooks break the app?
 
@@ -127,7 +141,7 @@ Notebooks and the training pipeline are **separate paths** until someone deliber
 
 ## 3. Repository access (public vs private)
 
-**Public repo (recommended for reviewers):** clone is open; release download works **without** a GitHub token — skip to §5 after §2.4 download.
+**Public repo (recommended for reviewers):** clone is open; release download works **without** a GitHub token — use **§2.4**, then **§7** to run the app.
 
 **Private repo:** reviewers need **both** code access and a token to download the release asset.
 

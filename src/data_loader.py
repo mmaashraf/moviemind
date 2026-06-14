@@ -43,6 +43,10 @@ def download_movielens_1m(data_dir="data"):
         
     return extract_dir
 
+def main(data_dir: str = "data") -> str | None:
+    """Download and extract MovieLens 1M if not already present."""
+    return download_movielens_1m(data_dir=data_dir)
+
+
 if __name__ == "__main__":
-    # Test the download function when the script is run directly
-    download_movielens_1m()
+    main()

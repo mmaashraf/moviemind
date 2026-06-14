@@ -1,90 +1,81 @@
-# MovieMind: Movie Recommendation System & AI Agent
+# MovieMind
 
-End-to-end capstone on **MovieLens 1M**: feature engineering, ML/DL models, FastAPI backend, Streamlit UI, and optional **Ollama** NLP + multi-step **tool agent**.
+Movie recommendations on **MovieLens 1M**: ML/DL models, **FastAPI** API, **Streamlit** UI, optional **Ollama** agent.
 
-**Best model in this repo’s evals:** Gradient Boosting (RMSE ~0.897). See `evidence/phase9_split_eval/` for split summaries.
-
-**Deployment scope:** **Local run only** (`127.0.0.1`) — no TLS, API auth, or rate limits. Not intended as a public internet service. See [`docs/SECURITY.md`](docs/SECURITY.md).
+**Local demo only** (`127.0.0.1`). See [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ---
 
-## Start here
+## Run locally (everyone starts here)
 
-| I want to… | Open |
-|------------|------|
-| **Run the app** (install, build, verify) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) |
-| **Artifacts + scripts** (pack / download / restart) | [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
-| **~2 min run** (release tarball) | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 |
-| **Reproduce training** (notebooks + script order) | [`REPLICATION.md`](REPLICATION.md) |
-| **Tool agent / SSE** | [`docs/AGENT.md`](docs/AGENT.md) |
-| **UI ↔ API** | [`docs/APP_AND_API.md`](docs/APP_AND_API.md) |
-| **Ollama / local LLM** | [`docs/OLLAMA.md`](docs/OLLAMA.md) |
-| **All docs index** | [`docs/README.md`](docs/README.md) |
-| **Security (before public)** | [`docs/SECURITY.md`](docs/SECURITY.md) |
-| **Metrics & plots already run** | `evidence/phase9_split_eval/`, `evidence/phase6/` |
-| **Phase checklist (author)** | [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md) |
+All commands assume you cloned into a folder named `moviemind` and use **`moviemind/` as the working directory**.
 
 ```bash
 git clone https://github.com/mmaashraf/moviemind.git
 cd moviemind
+python3 -m venv .venv && source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
+bash scripts/download_review_artifacts.sh
 ```
 
-SSH: `git clone git@github.com:mmaashraf/moviemind.git`
+This creates gitignored **`data/`** and **`models/`** (~160 MB) from the [GitHub release](https://github.com/mmaashraf/moviemind/releases/tag/v1.0-artifacts). Without them you cannot run the app or training notebooks.
+
+**Verify install:** `python -m unittest discover -s tests -q`
 
 ---
 
-## What runs when you start the app
+## Pick one goal
 
-| Process | Technology | Default URL |
-|---------|------------|-------------|
-| **Backend (API)** | `uvicorn src.api.app:app` | http://127.0.0.1:8000 |
-| **Frontend (UI)** | `streamlit run app/streamlit_app.py` | http://127.0.0.1:8502 |
-
-The UI calls the API at `MOVIEMIND_API_URL` (default `http://127.0.0.1:8000`).  
-**Ollama** (`http://127.0.0.1:11434`) is only for **Local LLM** parse and the **tool agent**, not for Manual recommend.
-
-Quick start: `bash scripts/restart_moviemind.sh` after artifacts exist — see [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) §2.4 and §7.
+| Goal | Time | Commands / file |
+|------|------|-----------------|
+| **Run the web app** | ~2 min after setup | `bash scripts/restart_moviemind.sh` → open http://127.0.0.1:8502 |
+| **Run the capstone notebook** | ~5–15 min | `jupyter lab notebooks/MovieMind_capstone.ipynb` or `bash scripts/verify_capstone_notebook.sh` |
+| **Browse only** (no run) | instant | Read `notebooks/` and `evidence/` in the repo |
+| **Full re-train** | hours | [`REPLICATION.md`](REPLICATION.md) Tier 2 |
 
 ---
 
-## Project status (summary)
+## Run the web app
 
-| Phase | Status | Notes |
-|-------|--------|--------|
-| 1–6 | Done | Data → features → ML/DL → post-analysis |
-| 7 API | Done | FastAPI + model registry |
-| 8 UI + NLP | Done | `local-llm`, `api-llm` |
-| 8x Tool agent | Done | `/agent/query`, `/agent/query/stream` (SSE) |
+```bash
+source .venv/bin/activate
+bash scripts/restart_moviemind.sh
+bash scripts/verify_local_app.sh
+```
 
-Detail: [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md)
+| Service | URL |
+|---------|-----|
+| **UI** | http://127.0.0.1:8502 |
+| **API docs** | http://127.0.0.1:8000/docs |
 
----
+**Try:** Recommend → Manual → user **1161** → model **Gradient Boosting** → Get Recommendations.
 
-## Architecture (short)
+**Stop:** `bash scripts/stop_moviemind.sh`
 
-- **Data:** MovieLens 1M + user demographics.
-- **Models:** `baseline_global_mean`, sklearn regressors, NCF baseline/tuned — see `/models` when artifacts exist.
-- **API:** predict, recommend, user summary, NLP parse, multi-step tool agent.
-- **UI:** Recommend, inspectors, embeddings, evidence browser, Ollama monitor, system status.
-- **Best eval:** Gradient Boosting; diversity via `diversity_alpha` on recommend + agent tools.
+First API start can take up to ~90s while models load. Details: [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
 
 ---
 
-## API endpoints
+## Run the capstone notebook (course submission)
 
-| Method | Path | Notes |
-|--------|------|--------|
-| GET | `/health` | Liveness |
-| GET | `/models` | `available` per artifact |
-| GET | `/models/{model_id}/info` | Inspector |
-| GET | `/users/{user_id}/summary` | **404** if user out of range |
-| POST | `/predict` | Single rating |
-| POST | `/recommend` | Top-N |
-| POST | `/nlp/query` | `local-llm` or `api-llm` |
-| POST | `/agent/query` | Tool agent (JSON) |
-| POST | `/agent/query/stream` | Tool agent (SSE) |
+Single notebook: download → EDA → preprocessing → ML/DL train → tuning → evaluation. **No web app code** in the notebook.
 
-Interactive docs: http://127.0.0.1:8000/docs
+```bash
+source .venv/bin/activate
+jupyter lab notebooks/MovieMind_capstone.ipynb
+```
+
+Headless check (same fast path as CI smoke):
+
+```bash
+bash scripts/verify_capstone_notebook.sh
+```
+
+Default skips re-training when `data/processed/` and `models/` already exist. Full re-train: see [`REPLICATION.md`](REPLICATION.md) Tier 1.5.
+
+Other EDA notebooks (optional): `notebooks/01_eda.ipynb`, `notebooks/02_long_tail_and_cold_start.ipynb`.
 
 ---
 
@@ -92,31 +83,38 @@ Interactive docs: http://127.0.0.1:8000/docs
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/restart_moviemind.sh` | Start API + UI |
-| `scripts/stop_moviemind.sh` | Stop API + UI — see [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
-| `scripts/verify_local_app.sh` | Health check for :8000 / :8502 |
-| `scripts/build_model_artifacts.py` | Chain training phases — see [`REPLICATION.md`](REPLICATION.md) |
-| `scripts/download_review_artifacts.sh` | Pull pre-built `data/` + `models/` — see [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
-| `scripts/pack_review_artifacts.sh` | Create tarball for GitHub Release |
-| `scripts/setup_local_ollama.sh` | Ollama install + default model |
-| `scripts/test_local_llm.sh` | API + NLP smoke |
+| `scripts/download_review_artifacts.sh` | Pre-built `data/` + `models/` |
+| `scripts/restart_moviemind.sh` | Start API :8000 + UI :8502 |
+| `scripts/stop_moviemind.sh` | Stop API + UI |
+| `scripts/verify_local_app.sh` | Health check for app |
+| `scripts/verify_capstone_notebook.sh` | Execute capstone notebook (fast path) |
+| `scripts/build_model_artifacts.py` | Full training pipeline |
 
 ---
 
-## Evidence (committed outputs)
+## For reviewers using Cursor (or other AI assistants)
 
-- `evidence/phase5b/` — DL tuning  
-- `evidence/phase6/` — post-analysis  
-- `evidence/phase7/` — API smoke  
-- `evidence/phase8/` — UI/NLP + screenshots  
-- `evidence/phase9_split_eval/` — split eval summaries  
+When helping someone run this repo locally:
 
-Index: [`evidence/README.md`](evidence/README.md)
+1. **Working directory:** always `moviemind/` (project root containing `src/`, `app/`, `requirements.txt`).
+2. **Virtual env:** create `.venv`, activate, `pip install -r requirements.txt`.
+3. **Artifacts:** run `bash scripts/download_review_artifacts.sh` before app or capstone notebook (paths are gitignored).
+4. **App:** `bash scripts/restart_moviemind.sh` then `bash scripts/verify_local_app.sh`.
+5. **Capstone notebook:** `bash scripts/verify_capstone_notebook.sh` or open `notebooks/MovieMind_capstone.ipynb`.
+6. **Do not commit** `data/`, `models/`, `.venv/`, or `evidence/runtime/`.
+
+Extended checklists: [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md). Training order: [`REPLICATION.md`](REPLICATION.md).
 
 ---
 
-## Replication and maintenance
+## More documentation
 
-- **Commands and notebook order:** [`REPLICATION.md`](REPLICATION.md) only (do not duplicate in this file).
-- **Setup/run changes:** update [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
-- **Phase milestones:** update [`docs/internal/PROGRESS_TRACKER.md`](docs/internal/PROGRESS_TRACKER.md).
+| Topic | File |
+|-------|------|
+| Reviewer setup & verification | [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md) |
+| Notebooks & training order | [`REPLICATION.md`](REPLICATION.md) |
+| Scripts & runtime | [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
+| Tool agent | [`docs/AGENT.md`](docs/AGENT.md) |
+| All docs | [`docs/README.md`](docs/README.md) |
+
+**Best offline model:** Gradient Boosting — test RMSE **0.8981** (`evidence/phase9_split_eval/`).

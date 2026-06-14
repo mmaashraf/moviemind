@@ -269,12 +269,14 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export MOVIEMIND_ARTIFACTS_URL="https://github.com/mmaashraf/moviemind/releases/download/v1.0-artifacts/moviemind-artifacts.tar.gz"
 bash scripts/download_review_artifacts.sh
+python -m unittest discover -s tests -q
 bash scripts/restart_moviemind.sh
+bash scripts/verify_local_app.sh
 ```
 
-Open http://127.0.0.1:8502 (API http://127.0.0.1:8000). For tool agent / local LLM, start Ollama separately or use `--with-ollama`.
+Open http://127.0.0.1:8502 (API http://127.0.0.1:8000). Tarball includes `data/ml-1m/` for notebooks ([`REPLICATION.md`](../REPLICATION.md) Tier 1). For tool agent / local LLM, start Ollama separately or use `--with-ollama`.
 
-Without a release URL: build locally per [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) §4.2–4.3 (~15–45 min minimum).
+Without a release URL: build locally per [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) §5 (~15–45 min minimum).
 
 ---
 
@@ -284,7 +286,7 @@ Without a release URL: build locally per [`../REVIEWER_SETUP.md`](../REVIEWER_SE
 2. `bash scripts/pack_review_artifacts.sh`
 3. Create GitHub Release; upload `moviemind-artifacts.tar.gz`.
 4. Set real URL in `REVIEWER_SETUP.md` §2.4 and in course/submission instructions.
-5. Smoke-test on a clean clone: download → `restart_moviemind.sh` → Manual recommend (user 1, `gradient_boosting`).
+5. Smoke-test on a clean clone: download → `restart_moviemind.sh` → `verify_local_app.sh` → Manual recommend (user **1161**, `gradient_boosting`).
 
 ---
 
