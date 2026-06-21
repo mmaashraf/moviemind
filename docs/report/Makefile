@@ -9,6 +9,8 @@ figures:
 
 pdf: figures
 	cd "$(TEXDIR)" && tectonic "$(MAIN).tex"
+	cp "$(TEXDIR)/$(MAIN).pdf" "$(ROOT)/$(MAIN).pdf"
+	@echo "Copied $(MAIN).pdf -> $(ROOT)/$(MAIN).pdf"
 
 # Best-effort Word export (pandoc does not expand \\input; merges section bodies)
 docx: $(MAIN).tex sections/*.tex
