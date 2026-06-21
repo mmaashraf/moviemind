@@ -1,0 +1,61 @@
+\section{Evaluation}
+
+\subsection{Raw machine learning results (test set)}
+
+Table~\ref{tab:ml-raw} summarizes models trained with default or project-standard hyperparameters.
+
+\begin{table}[ht]
+  \centering
+  \caption{Raw ML and baseline metrics on the test split (70/10/20 protocol).}
+  \label{tab:ml-raw}
+  \begin{tabular}{lrrr}
+    \toprule
+    Model & RMSE & MAE & Fit time (s) \\
+    \midrule
+    Baseline (global mean) & 1.1048 & 0.9181 & 0.00 \\
+    Linear regression      & 0.9005 & 0.7088 & 0.06 \\
+    Random forest (raw)    & 0.8998 & 0.7084 & 20.72 \\
+    \textbf{Gradient boosting (raw)} & \textbf{0.8981} & \textbf{0.7062} & 170.06 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Gradient boosting achieves the lowest test RMSE and MAE among all families.
+Linear regression and random forest are competitive, confirming that engineered aggregates capture much of
+the signal in MovieLens 1M.
+
+\subsection{Tuned machine learning}
+
+Validation-selected hyperparameters for random forest and gradient boosting yield test RMSE 0.8998 and
+0.8993 respectively---slightly \emph{worse} than the raw gradient boosting run (Table~B in project evidence).
+Fast-pass subsampled tuning did not improve the champion; raw GB remains the reporting winner.
+
+\subsection{Deep learning results}
+
+\begin{table}[ht]
+  \centering
+  \caption{Neural collaborative filtering (validation-focused metrics).}
+  \label{tab:dl}
+  \begin{tabular}{llr}
+    \toprule
+    Model & Target & Best / final metric \\
+    \midrule
+    NCF (raw)         & Val RMSE at epoch 10 & 1.1997 \\
+    NCF (Optuna tuned)& Val RMSE (50 trials)  & 1.0887 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Tuned NCF substantially improves over the raw architecture on validation RMSE but still trails gradient
+boosting on the primary test regression metrics used for ML comparison.
+
+\subsection{Champion selection}
+
+\begin{itemize}
+  \item \textbf{Overall offline champion:} raw Gradient Boosting (test RMSE 0.8981).
+  \item \textbf{Best DL path:} Optuna-tuned NCF on validation objective.
+  \item \textbf{Trade-off:} GB training takes ${\sim}$170\,s vs.\ $<$1\,s for linear regression; NCF tuning
+        adds ${\sim}$16 minutes of trial search in our recorded run.
+\end{itemize}
+
+Full tables and run logs: \texttt{evidence/phase9\_split\_eval/evaluation\_master\_summary\_70\_10\_20.md}.

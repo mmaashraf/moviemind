@@ -10,3 +10,19 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# Course report (docs/report/) — build outputs only; .tex / .bib source stays in git
+docs/report/moviemind_report.pdf
+docs/report/moviemind_report.docx
+docs/report/*.aux
+docs/report/*.bbl
+docs/report/*.blg
+docs/report/*.fdb_latexmk
+docs/report/*.fls
+docs/report/*.log
+docs/report/*.out
+docs/report/*.synctex.gz
+docs/report/*.toc
+
+# Local runtime logs (API/UI)
+evidence/runtime/

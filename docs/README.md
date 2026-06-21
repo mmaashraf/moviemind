@@ -7,6 +7,7 @@
 | [`../README.md`](../README.md) | **Start here** — three paths: run app / browse / reproduce |
 | [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) | Clone → artifacts → run app → verify |
 | [`../REPLICATION.md`](../REPLICATION.md) | Notebooks + training script order |
+| [`report/README.md`](report/README.md) | **Course report** — LaTeX → PDF / Word |
 
 ## Product / reviewer depth
 

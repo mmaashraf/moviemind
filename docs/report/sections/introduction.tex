@@ -1,0 +1,25 @@
+\section{Introduction}
+
+Online streaming platforms depend on recommender systems to surface relevant items from catalogs that users
+will never fully browse.
+The problem is difficult because user--item interaction matrices are extremely sparse: most users rate only
+a small fraction of available movies, and popularity follows a long-tail distribution where niche titles
+receive few ratings.
+
+\textbf{MovieLens 1M} provides approximately one million explicit star ratings from roughly 6{,}000 users
+on about 3{,}900 movies, along with user demographics and movie metadata \cite{harper2015movielens}.
+It is a standard benchmark for rating prediction and hybrid recommendation research.
+
+This capstone addresses three practical goals:
+\begin{enumerate}
+  \item Understand data characteristics that affect model choice (sparsity, demographics, cold start).
+  \item Build and compare baseline, machine learning, and deep learning predictors under a strict
+        time-based evaluation protocol.
+  \item Deliver reproducible artifacts: a single Jupyter notebook for training and evaluation, plus
+        evidence tables committed to the repository.
+\end{enumerate}
+
+Accurate offline evaluation matters because deploying a weak model wastes user attention, while
+overfitting to random splits inflates reported metrics.
+We therefore split data chronologically by rating timestamp so that training never sees future
+interactions---a setting closer to production deployment than a random shuffle.

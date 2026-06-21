@@ -1,0 +1,33 @@
+\section{Conclusion}
+
+We built MovieMind, a reproducible movie recommendation pipeline on MovieLens 1M with explicit attention to
+data sparsity, long-tail popularity, and leakage-safe evaluation.
+Engineered tabular features combined with gradient boosting outperform linear models, random forests, and
+our NCF implementations on test RMSE under a chronological 70/10/20 split.
+
+\textbf{Key findings:}
+\begin{itemize}
+  \item More than 95\% matrix sparsity and long-tail item popularity justify hybrid features beyond pure
+        collaborative filtering.
+  \item Raw gradient boosting is the strongest single offline model (RMSE 0.8981, MAE 0.7062).
+  \item ML and DL hyperparameter tuning improved some configurations but did not displace the raw GB
+        champion in this run.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+  \item Rating prediction RMSE does not fully capture ranking quality for top-$K$ recommendation lists.
+  \item Cold-start users and tail movies remain challenging despite aggregate features.
+  \item DL models may benefit from longer training and richer text or genre embeddings.
+\end{itemize}
+
+\textbf{Future work:}
+\begin{itemize}
+  \item Two-tower retrieval and learning-to-rank objectives (Precision@K / NDCG).
+  \item Session-aware or sequential recommenders using timestamps.
+  \item Integration with the deployed FastAPI/Streamlit app and optional Ollama tool agent for interactive
+        queries (documented separately in the repository).
+\end{itemize}
+
+The complete training and evaluation workflow is available in
+\texttt{notebooks/MovieMind\_capstone.ipynb} on the project repository.
