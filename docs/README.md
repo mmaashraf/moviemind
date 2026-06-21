@@ -8,6 +8,7 @@
 | [`../REVIEWER_SETUP.md`](../REVIEWER_SETUP.md) | Clone → artifacts → run app → verify |
 | [`../REPLICATION.md`](../REPLICATION.md) | Notebooks + training script order |
 | [`report/README.md`](report/README.md) | **Course report** — LaTeX → PDF / Word |
+| [`../evidence/demo/README.md`](../evidence/demo/README.md) | **Demo videos** — web app + capstone notebook (WebM) |
 
 ## Product / reviewer depth
 

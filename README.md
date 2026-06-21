@@ -32,7 +32,7 @@ This creates gitignored **`data/`** and **`models/`** (~160 MB) from the [GitHub
 |------|------|-----------------|
 | **Run the web app** | ~2 min after setup | `bash scripts/restart_moviemind.sh` → open http://127.0.0.1:8502 |
 | **Run the capstone notebook** | ~5–15 min | `jupyter lab notebooks/MovieMind_capstone.ipynb` or `bash scripts/verify_capstone_notebook.sh` |
-| **Browse only** (no run) | instant | Read `notebooks/` and `evidence/` in the repo |
+| **Watch demo videos** | instant | [`evidence/demo/video/`](evidence/demo/video/) — web app + capstone notebook |
 | **Full re-train** | hours | [`REPLICATION.md`](REPLICATION.md) Tier 2 |
 
 ---
@@ -79,6 +79,29 @@ Other EDA notebooks (optional): `notebooks/01_eda.ipynb`, `notebooks/02_long_tai
 
 ---
 
+## Demo videos
+
+Pre-recorded walkthroughs (Playwright → WebM). Full details: [`evidence/demo/README.md`](evidence/demo/README.md).
+
+| Video | Path | Contents |
+|-------|------|----------|
+| **Web app** | [`evidence/demo/video/moviemind_demo.webm`](evidence/demo/video/moviemind_demo.webm) | Manual mode — all 6 models, diversity + taste map, NLP parse + multi-step tool agent, all UI tabs |
+| **Capstone notebook** | [`evidence/demo/video/moviemind_capstone_notebook.webm`](evidence/demo/video/moviemind_capstone_notebook.webm) | JupyterLab — cell-by-cell execution and outputs (fast path) |
+
+```bash
+open evidence/demo/video/moviemind_demo.webm
+open evidence/demo/video/moviemind_capstone_notebook.webm
+```
+
+**Re-record** (needs `pip install -r requirements-demo.txt`, `playwright install chromium`, artifacts + Ollama for agent segments):
+
+```bash
+bash scripts/record_demo_video.sh
+bash scripts/record_notebook_video.sh
+```
+
+---
+
 ## Helper scripts
 
 | Script | Purpose |
@@ -89,6 +112,8 @@ Other EDA notebooks (optional): `notebooks/01_eda.ipynb`, `notebooks/02_long_tai
 | `scripts/verify_local_app.sh` | Health check for app |
 | `scripts/verify_capstone_notebook.sh` | Execute capstone notebook (fast path) |
 | `scripts/build_model_artifacts.py` | Full training pipeline |
+| `scripts/record_demo_video.sh` | Web app demo → `evidence/demo/video/moviemind_demo.webm` |
+| `scripts/record_notebook_video.sh` | Capstone notebook demo → `evidence/demo/video/moviemind_capstone_notebook.webm` |
 
 ---
 

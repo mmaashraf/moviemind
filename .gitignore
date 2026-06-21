@@ -26,3 +26,8 @@ docs/report/*.toc
 
 # Local runtime logs (API/UI)
 evidence/runtime/
+
+# Demo video backups and Playwright temp dirs (committed videos live in evidence/demo/video/)
+evidence/demo/video/backup/
+evidence/demo/video/_playwright_videos/
+evidence/demo/video/_playwright_notebook_videos/

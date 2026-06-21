@@ -1,0 +1,2 @@
+# Optional: Playwright demo video recorder (scripts/record_demo_video.py)
+playwright>=1.49
