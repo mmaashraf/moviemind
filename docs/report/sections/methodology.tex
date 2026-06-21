@@ -1,0 +1,68 @@
+\section{Methodology}
+
+\subsection{Evaluation protocol}
+
+We use a \textbf{chronological 70/10/20 split} on rating timestamps:
+\begin{itemize}
+  \item Train: 700{,}146 rows (earliest 70\% of timeline)
+  \item Validation: 100{,}020 rows (next 10\%)
+  \item Test: 200{,}043 rows (final 20\%)
+\end{itemize}
+
+Hyperparameters are selected using validation RMSE; test metrics are reported once per model family.
+This avoids leakage from future ratings into training features or tuning decisions.
+
+\subsection{Feature engineering}
+
+From raw tables we compute:
+\begin{itemize}
+  \item \texttt{user\_rating\_count}, \texttt{user\_avg\_rating}
+  \item \texttt{movie\_rating\_count}, \texttt{movie\_avg\_rating}
+  \item \texttt{release\_year} (parsed from movie title)
+  \item User fields: \texttt{age}, \texttt{occupation}
+\end{itemize}
+
+Implementation: \texttt{src/features.py}, orchestrated in the capstone notebook.
+
+\subsection{Machine learning models}
+
+We train four regressors on the tabular feature matrix:
+\begin{enumerate}
+  \item \textbf{Baseline:} global mean rating on the training set.
+  \item \textbf{Linear regression} (sklearn defaults).
+  \item \textbf{Random forest} (\texttt{n\_estimators=100}, \texttt{max\_depth=10}).
+  \item \textbf{Gradient boosting} (\texttt{n\_estimators=200}, \texttt{max\_depth=5},
+        \texttt{learning\_rate=0.1}).
+\end{enumerate}
+
+ML hyperparameter search (\texttt{src/tune\_ml.py}) uses a fast-pass subsample of train/validation for
+grid search, then refits the best configuration on the full training split.
+
+\subsection{Neural collaborative filtering}
+
+The NCF model (\texttt{src/dl\_model.py}) embeds users and movies, concatenates embeddings with dense
+tabular features, and passes them through fully connected layers with dropout.
+Baseline settings include embedding dimension 32, learning rate 0.001, and 10 training epochs.
+
+\textbf{Optuna tuning} (\texttt{src/tune\_dl.py}) runs 50 trials with 3 epochs per trial on validation RMSE.
+The winning configuration is retrained in \texttt{src/post\_analysis.py} to produce
+\texttt{ncf\_tuned\_best.pt} and explainability artifacts.
+
+\subsection{Metrics}
+
+Primary offline metrics:
+\begin{itemize}
+  \item \textbf{RMSE} --- $\sqrt{\frac{1}{n}\sum_i (y_i - \hat{y}_i)^2}$; penalizes large errors.
+  \item \textbf{MAE} --- mean absolute error; more robust to outliers.
+\end{itemize}
+
+Ranking metrics (Precision@K, Recall@K) are defined in \texttt{src/evaluation.py} for extension; the
+capstone notebook focuses on rating regression consistent with the training objective.
+
+\subsection{Reproducibility}
+
+All steps are runnable from \texttt{notebooks/MovieMind\_capstone.ipynb}.
+Reviewers can verify quickly with:
+\begin{verbatim}
+bash scripts/verify_capstone_notebook.sh
+\end{verbatim}

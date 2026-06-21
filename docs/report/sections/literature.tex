@@ -1,0 +1,38 @@
+\section{Literature Review}
+
+\subsection{Collaborative filtering and matrix factorization}
+
+Early recommender systems relied on \textbf{collaborative filtering}: inferring preferences from
+patterns in the user--item matrix.
+Matrix factorization and latent-factor models remain strong baselines when
+interaction density is moderate \cite{rendle2009bpr}.
+
+\subsection{Hybrid and content-aware approaches}
+
+\textbf{Hybrid} systems combine collaborative signals with content features (genres, demographics, release year).
+Engineered aggregates---such as per-user average rating and per-movie popularity---inject side information
+without requiring dense pairwise co-occurrence.
+Tree ensembles (random forests, gradient boosting) are effective on such tabular data
+\cite{breiman2001random,friedman2001gradient}.
+
+\subsection{Neural collaborative filtering}
+
+He et al.\ \cite{he2017ncf} proposed \textbf{Neural Collaborative Filtering (NCF)}, which learns user and item
+embeddings and passes their interaction through a multilayer perceptron to predict ratings.
+NCF can capture nonlinear interactions but typically needs more data and tuning than strong gradient-boosted
+baselines on medium-scale explicit-feedback datasets.
+
+\subsection{Hyperparameter optimization}
+
+Modern DL pipelines often use automated search.
+\textbf{Optuna} provides efficient trial-based optimization for neural architectures and learning rates
+\cite{akiba2019optuna}.
+We use Optuna for NCF and grid search for sklearn models, selecting configurations on the validation split
+before reporting test metrics.
+
+\subsection{Implementation stack}
+
+Modeling uses \textbf{scikit-learn} \cite{pedregosa2011sklearn} for classical ML and
+\textbf{PyTorch} \cite{paszke2019pytorch} for NCF.
+The MovieLens 1M schema and separator conventions follow the official GroupLens release
+\cite{harper2015movielens}.

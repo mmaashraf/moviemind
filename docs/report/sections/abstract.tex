@@ -1,0 +1,15 @@
+\section{Abstract}
+
+Movie recommendation systems must predict user preferences from sparse, long-tailed interaction data.
+This project presents \textbf{MovieMind}, an end-to-end pipeline on the MovieLens 1M dataset that combines
+exploratory analysis, leakage-safe feature engineering, classical machine learning, and neural collaborative
+filtering (NCF).
+We evaluate models with root mean squared error (RMSE) and mean absolute error (MAE) on a chronological
+70/10/20 train/validation/test split.
+Among all families tested, \textbf{raw Gradient Boosting} on engineered tabular features achieves the best
+test performance (RMSE \textbf{0.8981}, MAE \textbf{0.7062}).
+Hyperparameter tuning improves the deep learning path but does not surpass the tree-based champion.
+The full workflow is reproduced in \texttt{notebooks/MovieMind\_capstone.ipynb}; an optional FastAPI and
+Streamlit deployment extends the work beyond offline modeling.
+
+\textbf{Keywords:} recommender systems, MovieLens, gradient boosting, neural collaborative filtering, cold start, long tail.

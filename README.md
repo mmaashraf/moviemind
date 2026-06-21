@@ -116,5 +116,33 @@ Extended checklists: [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md). Training order: [
 | Scripts & runtime | [`docs/ARTIFACTS_AND_RUNTIME.md`](docs/ARTIFACTS_AND_RUNTIME.md) |
 | Tool agent | [`docs/AGENT.md`](docs/AGENT.md) |
 | All docs | [`docs/README.md`](docs/README.md) |
+| **Course report (PDF)** | [`docs/report/README.md`](docs/report/README.md) — `cd docs/report && make pdf` |
 
 **Best offline model:** Gradient Boosting — test RMSE **0.8981** (`evidence/phase9_split_eval/`).
+
+---
+
+## Reference development environment
+
+The project was built and smoke-tested on the machine below. **These are reference specs, not hard minimums** — reviewers can run the app and capstone notebook on other macOS/Linux/Windows setups with Python 3.10+ and the steps above. Minimum disk/RAM notes: [`REVIEWER_SETUP.md`](REVIEWER_SETUP.md).
+
+| | |
+|---|---|
+| **Hardware** | Apple M1 Pro (8 cores), 16 GB RAM, `arm64` |
+| **OS** | macOS 26.5.1 |
+| **Python** | 3.13.2 (`python3 -m venv .venv` in project root) |
+| **Key packages** (from `requirements.txt`, Jun 2026) | PyTorch 2.12, scikit-learn 1.8, pandas 3.0, NumPy 2.4, FastAPI 0.137, Streamlit 1.58, Optuna 4.9, Jupyter 1.1 |
+| **Report PDF** (optional) | Tectonic 0.16.9, Pandoc 3.6.4 — `cd docs/report && make pdf` |
+| **DL backend** | Apple **MPS** when training NCF locally (falls back to CPU elsewhere) |
+
+**Rough timings on this machine (pre-built artifacts, fast paths):**
+
+| Task | Time |
+|------|------|
+| `pip install -r requirements.txt` | several minutes (PyTorch) |
+| `download_review_artifacts.sh` | ~1–3 min (network) |
+| `restart_moviemind.sh` + first API load | up to ~90 s |
+| Capstone notebook (`verify_capstone_notebook.sh`, skip re-train) | ~5–15 min |
+| Full re-train ([`REPLICATION.md`](REPLICATION.md) Tier 2) | hours |
+
+If an assistant is reproducing the repo for someone else, use the **Cursor** checklist above first; treat this table as expected environment and timing context, not a blocker.
